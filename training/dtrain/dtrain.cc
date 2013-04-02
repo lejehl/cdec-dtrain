@@ -375,8 +375,8 @@ main(int argc, char** argv)
         if (rank_error) rank_errors++;
         if (scale_bleu_diff) eta = it->first.score - it->second.score;
         if (rank_error || margin < loss_margin) {
-          SparseVector<weight_t> diff_vec = it->first.f - it->second.f;
-          lambdas.plus_eq_v_times_s(diff_vec, eta);
+          SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
+          lambdas.plus_eq_v_times_s(diff_vec, eta); // add learning rate * gradient
           if (gamma)
             lambdas.plus_eq_v_times_s(lambdas, -2*gamma*eta*(1./npairs));
         }
