@@ -8,7 +8,7 @@
 namespace dtrain
 {
 
-bool
+inline bool
 cmp_hyp_by_model_d(ScoredHyp a, ScoredHyp b)
 {
   return a.model > b.model;

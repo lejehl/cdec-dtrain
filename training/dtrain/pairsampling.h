@@ -5,14 +5,14 @@ namespace dtrain
 {
 
 
-bool
+inline bool
 accept_pair(score_t a, score_t b, score_t threshold)
 {
   if (fabs(a - b) < threshold) return false;
   return true;
 }
 
-bool
+inline bool
 cmp_hyp_by_score_d(ScoredHyp a, ScoredHyp b)
 {
   return a.score > b.score;
@@ -21,7 +21,7 @@ cmp_hyp_by_score_d(ScoredHyp a, ScoredHyp b)
 inline void
 all_pairs(vector<ScoredHyp>* s, vector<pair<ScoredHyp,ScoredHyp> >& training, score_t threshold, unsigned max, bool misranked_only, float _unused=1)
 {
-  sort(s->begin(), s->end(), cmp_hyp_by_score_d);
+  sort(s->begin(), s->end(), cmp_hyp_by_score_d); // sort hyps by score
   unsigned sz = s->size();
   bool b = false;
   unsigned count = 0;
@@ -104,7 +104,7 @@ partXYX(vector<ScoredHyp>* s, vector<pair<ScoredHyp,ScoredHyp> >& training, scor
  * threshold = 5% BLEU (0.05 for param 3)
  *       cut = top 50
  */
-bool
+inline bool
 _PRO_cmp_pair_by_diff_d(pair<ScoredHyp,ScoredHyp> a, pair<ScoredHyp,ScoredHyp> b)
 {
   return (fabs(a.first.score - a.second.score)) > (fabs(b.first.score - b.second.score));

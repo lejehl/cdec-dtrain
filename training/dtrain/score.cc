@@ -1,3 +1,4 @@
+
 #include "score.h"
 
 namespace dtrain
@@ -278,6 +279,106 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
   return ret;
 }
 
+/*
+ * MapScorer
+ *
+ * uses Average Precision of a query containing the current translation
+ * optimize translations for retrieval
+ */
+MapScorer::MapScorer( string query_file, string doc_file, string relevance_file )
+: docs_( doc_file ), queries_( query_file, relevance_file )
+{
+	// load document collection, query collection.
+	iteration_ = 0;
+	isFirstEpoch_ = true;
+	docs_.loadDocs();
+	queries_.loadQueries();
+}
+//
+
+score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
+		const unsigned rank, const unsigned /*src_len*/ )
+{
+	if ( isFirstEpoch_ == true ) {
+		return 0.0;
+	} else {
+	//	TODO: modify query
+	map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
+	qIter->second.setTerms(iteration_, hyp );
+	MyHeap results( 100 ); //TODO: this should be a parameter
+	retrieval( docs_, qIter->second.terms_, results );
+	return averagePrecision( results, qIter->second );
+	}
+}
+
+void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results )
+{
+	// TODO: heap size should be a parameter!
+
+	// TODO: maybe collection should implement its own iterator?
+	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
+			docIter != docs.collection_.end(); ++docIter ){
+		double score = 0.0;
+		// TODO: query should have a term iterator?
+		for ( set<WordID>::iterator it = query.begin(); it != query.end(); ++it ){
+			score += docIter->second.getScoreForQueryTerm( *it );
+		}
+		// add to heap if score is greate than 0
+		if (score != 0.0){
+		pair<string, double> p = make_pair( docIter->first, score );
+		results.addPair( p );
+
+		}
+
+	}
+}
+
+
+
+
+
+
+score_t MapScorer::averagePrecision( MyHeap& results,
+    		Query& query )
+{
+	score_t avPrec = 0.0;
+
+	vector<unsigned> gold( results.size_ );
+	vector<unsigned> retrieved( results.size_ );
+	// create gold standard
+	unsigned counter = 0;
+	for ( map<string, unsigned>::iterator i = query.relevant_docs_.begin(); i != query.relevant_docs_.end(); ++i ){
+		gold.at( counter ) =  i->second ;
+		counter += 1;
+	}
+	// create results
+	for ( unsigned i =0; i < results.heap_.size(); i++ ){
+		string docid = results.heap_.at(i).first;
+		if ( query.relevant_docs_.count(docid) == 1 ){
+			retrieved.at(i) =  query.relevant_docs_[docid] ;
+		}
+	}
+
+	counter = 0;
+	double sum = 0.0;
+	// precision at i
+	for ( unsigned i = 0; i < gold.size(); i++ ){
+		if ( retrieved.at(i) >= gold.at(i) ){
+			counter++;
+			sum += counter / ( i+1 );
+		}
+	}
+
+	// normalize by number of relevant docs
+	avPrec = sum/query.relevant_docs_.size();
+	return avPrec;
+}
+
+// in first epoch, fill the sentences_ map of the queries
+void MapScorer::addDecodedSrc( vector<WordID>& sent ){
+	queries_.setSentence( iteration_, sent );
+
+}
 
 } // namespace
 
