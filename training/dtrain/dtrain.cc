@@ -34,7 +34,11 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
     ("scale_bleu_diff",   po::value<bool>()->zero_tokens(),                      "learning rate <- bleu diff of a misranked pair")
     ("loss_margin",       po::value<weight_t>()->default_value(0.),  "update if no error in pref pair but model scores this near")
     ("max_pairs",         po::value<unsigned>()->default_value(std::numeric_limits<unsigned>::max()), "max. # of pairs per Sent.")
-    ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights");
+    ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights")
+    ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
+    ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
+    ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations");
+
   po::options_description cl("Command Line Options");
   cl.add_options()
     ("config,c",         po::value<string>(),              "dtrain config file")
@@ -136,6 +140,13 @@ main(int argc, char** argv)
 
   // scoring metric/scorer
   string scorer_str = cfg["scorer"].as<string>();
+
+  // only for map score:
+  string query_fn =  cfg["query_file"].as<string>();
+  string doc_fn =  cfg["doc_file"].as<string>();
+  string rels_fn =  cfg["rel_file"].as<string>();
+
+
   LocalScorer* scorer;
   if (scorer_str == "bleu") {
     scorer = dynamic_cast<BleuScorer*>(new BleuScorer);
@@ -155,6 +166,8 @@ main(int argc, char** argv)
     scorer = dynamic_cast<ApproxBleuScorer*>(new ApproxBleuScorer(N, approx_bleu_d));
   } else if (scorer_str == "lc_bleu") {
     scorer = dynamic_cast<LinearBleuScorer*>(new LinearBleuScorer(N));
+  } else if (scorer_str == "map" ) {
+	scorer = dynamic_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn ));
   } else {
     cerr << "Don't know scoring metric: '" << scorer_str << "', exiting." << endl;
     exit(1);
@@ -348,8 +361,14 @@ main(int argc, char** argv)
     f_count += observer->get_f_count();
     list_sz += observer->get_sz();
 
+    // does this work?
+    if ( t == 0 && scorer_str == "map" ){
+    	scorer->addDecodedSrc( (*samples)[0].w );
+    }
+
     // weight updates
-    if (!noup) {
+    // don't do an update for first iteration of MAP
+    if (!noup || !( scorer_str == "map" && t == 0 ) ) {
       // get pairs
       vector<pair<ScoredHyp,ScoredHyp> > pairs;
       if (pair_sampling == "all")
@@ -426,15 +445,22 @@ main(int argc, char** argv)
     if (rescale) lambdas /= lambdas.l2norm();
 
     ++ii;
+    // only for map
+    if (scorer_str == "map") {
+    	scorer->increaseIter();
+    }
 
   } // input loop
 
   if (average) w_average += lambdas;
 
-  if (scorer_str == "approx_bleu" || scorer_str == "lc_bleu") scorer->Reset();
+  if (scorer_str == "approx_bleu" || scorer_str == "lc_bleu" || scorer_str == "map") scorer->Reset();
 
   if (t == 0) {
     in_sz = ii; // remember size of input (# lines)
+    if ( scorer_str == "map"){
+    	scorer->finishedFirstEpoch(); // tell mapscorer that we are done with first epoch.
+    }
   }
 
   // print some stats
@@ -492,7 +518,7 @@ main(int argc, char** argv)
   }
   if (t+1 != T && !quiet) cerr << endl;
 
-  if (noup) break;
+  if (noup || (scorer_str == "map" && t == 0 )) break;
 
   // write weights to file
   if (select_weights == "best" || keep) {

@@ -2,6 +2,9 @@
 #define _DTRAIN_SCORE_H_
 
 #include "kbestget.h"
+#include "collection.h"
+#include "myheap.h"
+#include "document.h"
 
 using namespace std;
 
@@ -209,6 +212,33 @@ struct LinearBleuScorer : public BleuScorer
     onebest_counts_.One();
   }
 };
+
+
+struct MapScorer : public LocalScorer
+{
+	MapScorer( string query_file, string doc_file, string relevance_file );
+ 	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
+ 	void addDecodedSrc( vector<WordID>& );
+    inline void increaseIter(){
+    	iteration_ += 1;
+    }
+    inline void finishedFirstEpoch(){
+    	isFirstEpoch_ = false;
+    }
+    inline void Reset() {
+		iteration_ = 0;
+	}
+
+private:
+	unsigned iteration_;
+ 	DocumentCollection docs_;
+ 	QueryCollection queries_;
+ 	bool isFirstEpoch_;
+ 	void retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results );
+ 	score_t averagePrecision( MyHeap& results,
+    		Query& query );
+};
+
 
 
 } // namespace
