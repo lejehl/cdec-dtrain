@@ -5,7 +5,9 @@
  *      Author: laura
  */
 
+#include <algorithm>
 #include "myheap.h"
+
 
 
 using namespace std;
@@ -14,22 +16,22 @@ MyHeap::MyHeap( unsigned size ): heap_(  )
 {
 	is_full_ = false;
 	size_ = size;
-	cout << "Made new heap" << ", is full? " << is_full_ << ", size: " << size << endl;
+//	cout << "Made new heap" << ", is full? " << is_full_ << ", size: " << size << endl;
 
 }
 
 void MyHeap::addPair( pair<string, double> & new_pair ){
-	cout << "Trying to add pair: " << "<" << new_pair.first << "," << new_pair.second << ">" << endl;
+//	cout << "Trying to add pair: " << "<" << new_pair.first << "," << new_pair.second << ">" << endl;
 	if ( is_full_ ){
 		if ( heap_.at(0).second > new_pair.second ){
-			cout << "smallest element is greater then new pair. Not adding pair." << endl;
+//			cout << "smallest element is greater then new pair. Not adding pair." << endl;
 
 		} else {
-			cout << "Pair is added" << endl;
+//			cout << "Pair is added" << endl;
 			heap_.at(0)= new_pair;
 		}
 	} else {
-		cout << "Heap not full yet: Adding pair" << endl;
+//		cout << "Heap not full yet: Adding pair" << endl;
 		vector<pair<string, double> >:: iterator it = heap_.begin();
 		heap_.insert( it, new_pair );
 	}
@@ -59,4 +61,10 @@ void MyHeap::checkIfFull()
 	}
 	else is_full_ = true;
 
+}
+
+
+void MyHeap::reverseHeap()
+{
+	reverse( heap_.begin(), heap_.end());
 }

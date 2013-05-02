@@ -36,10 +36,8 @@ struct LocalScorer
   virtual score_t
   Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len)=0;
 
-  void Reset() {} // only for approx bleu
-  void increaseIter() {} // only for map
-  void addDecodedSrc( vector<WordID>& decoded_src ) {} // only for map
-  void finishedFirstEpoch() {} // only for map
+  virtual void Reset() { } // only for approx bleu and map
+  virtual void increaseIter() {} // only for map
 
   inline void
   Init(unsigned N, vector<score_t> weights)

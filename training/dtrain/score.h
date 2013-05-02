@@ -144,36 +144,50 @@ struct BleuScorer : public LocalScorer
 {
   score_t Bleu(NgramCounts& counts, const unsigned hyp_len, const unsigned ref_len);
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  void Reset() {}
+  void increaseIter() {}
 };
 
 struct StupidBleuScorer : public LocalScorer
 {
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  void Reset() {}
+  void increaseIter() {}
 };
 
 struct FixedStupidBleuScorer : public LocalScorer
 {
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  void Reset() {}
+  void increaseIter() {}
 };
 
 struct SmoothBleuScorer : public LocalScorer
 {
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  void Reset() {}
+  void increaseIter() {}
 };
 
 struct SumBleuScorer : public LocalScorer
 {
    score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+   void Reset() {}
+   void increaseIter() {}
 };
 
 struct SumExpBleuScorer : public LocalScorer
 {
    score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+   void Reset() {}
+   void increaseIter() {}
 };
 
 struct SumWhateverBleuScorer : public LocalScorer
 {
    score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+   void Reset() {}
+   void increaseIter() {}
 };
 
 struct ApproxBleuScorer : public BleuScorer
@@ -193,6 +207,8 @@ struct ApproxBleuScorer : public BleuScorer
   }
 
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len);
+
+  void increaseIter() {}
 };
 
 struct LinearBleuScorer : public BleuScorer
@@ -218,14 +234,17 @@ struct MapScorer : public LocalScorer
 {
 	MapScorer( string query_file, string doc_file, string relevance_file );
  	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
- 	void addDecodedSrc( vector<WordID>& );
-    inline void increaseIter(){
+// 	void addDecodedSrc( vector<WordID>& );
+    inline void increaseIter( ){
+    	cerr << " MapScorer: Input line " << iteration_ << endl;
     	iteration_ += 1;
     }
-    inline void finishedFirstEpoch(){
-    	isFirstEpoch_ = false;
-    }
+
     inline void Reset() {
+    	cerr << " Reset: called MapScorer implementation." << endl;
+    	if ( isFirstEpoch_ ) {
+    		isFirstEpoch_ = false;
+    	}
 		iteration_ = 0;
 	}
 

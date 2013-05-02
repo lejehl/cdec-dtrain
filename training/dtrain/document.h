@@ -51,6 +51,8 @@ public:
 	void setRelevantDocs( string& docid, unsigned relscore );
 	void setTerms( unsigned sent_id, vector<WordID>& text  );
 	void setSentence( unsigned sent_id, vector<WordID>& text  );
+	void printRelDocs( );
+	vector<unsigned> getSortedRelevances();
 
 //	vector<string> getSentences( ); //braucht man das?
 //	vector<string> getSentences( unsigned sent_id, vector<WordID>& new_sentence);

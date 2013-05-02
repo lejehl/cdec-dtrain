@@ -36,11 +36,13 @@ public:
 		// 3.Check if heap is full.
 		// 4. Sort heap
 	void printHeap();
+	void reverseHeap();
 private:
 	bool is_full_;
 	// sort vector by value
 	void sortByVal( );
 	void checkIfFull();
+
 
 
 };

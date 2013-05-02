@@ -89,7 +89,7 @@ void DocumentCollection::generateDfTable( )
 
 void DocumentCollection::loadDocs(  )
 {
-	cout << "Loading documents..." << endl;
+	cerr << " loading documents..." << endl;
 	ReadFile input( infile_ );
 	string in;
 
@@ -105,9 +105,6 @@ void DocumentCollection::loadDocs(  )
 		//tokenize
 		vector<string> text_tok;
 		tokenize( text, text_tok );
-		// TODO: convert to ids!
-		//vector<WordID> text_ids;
-     	//register_and_convert(text_tok, text_ids);
 
 		//create Document and geenrate tf vector
 		vector<WordID> word_id_vec;
@@ -123,20 +120,20 @@ void DocumentCollection::loadDocs(  )
 	averageDocLength();
 
 	// make dftable from tfvectors
-	cout << "Making dftable..." << endl;
+	cerr << " making dftable..." << endl;
 	generateDfTable( );
 //
 //
 //	//debug: print dftable
-	cout << "dftable: ";
-	map<WordID,unsigned>::iterator iter;
-			for ( iter=dftable_.begin(); iter != dftable_.end(); ++iter){
-				cout << iter->first << "\t" << iter->second << endl;
-			}
-			cout << endl;
+//	cerr << " dftable: ";
+//	map<WordID,unsigned>::iterator iter;
+//			for ( iter=dftable_.begin(); iter != dftable_.end(); ++iter){
+//				cout << iter->first << "\t" << iter->second << endl;
+//			}
+//			cout << endl;
 //
 //    // make bm25 weighted vectors from dftable and tfvectors
-	cout << "Making BM25 vectors ... " << endl;
+	cerr << " making BM25 vectors ... " << endl;
 	for (map<string,Document> ::iterator iter=collection_.begin(); iter != collection_.end(); ++iter)
 			{
 				double a = getAvgLen();
@@ -145,8 +142,8 @@ void DocumentCollection::loadDocs(  )
 				//debug
 //				iter->second.printWeightedVector();
 			}
-	cout << "Finished Loading!" << endl << "filename: " << infile_ << endl
-			 << endl << "num docs: " << num_docs_ << endl
+//cerr << " finished Loading!" << endl << "filename: " << infile_ << endl
+			cerr << " finished." << endl << "num docs: " << num_docs_ << endl
 			<< "avg len: " << avg_len_ << endl << "collection size: " << collection_.size() << endl;
 
 
@@ -163,7 +160,7 @@ void DocumentCollection::averageDocLength()
 	for ( map<string,Document>::iterator iter=collection_.begin(); iter != collection_.end(); ++iter){
 		double l = double(iter->second.doc_size_);
 		total += l;
-		cout << "total" << total << endl;
+//		cout << "total" << total << endl;
 	}
 	avg_len_ = total /double( num_docs_ ) ;
 }
@@ -186,24 +183,26 @@ QueryCollection::QueryCollection( string& filename, string& relevance_file )
  */
 void QueryCollection::loadQueries()
 {
-	cout << "Loading documents..." << endl;
+	cerr << " loading queries" << endl;
 	ReadFile input( infile_ );
 	ReadFile rels( relfile_ );
 	string in;
 	string rel_record;
 	string prev_qid = "";
 	string qid = "";
-	unsigned num_sentences = 1;
+	unsigned num_sentences = 0;
 
-	// make sure num_docs_ is 0
-//TODO: fix this!
-	Query Q(qid);
+	// make sure num_docs_ is 0?
+
 	while (getline( *input, in )) {
 		vector<string> parts;
 		splitOnTabs( in, parts );
 		string qid = parts[0];
 		if ( qid != prev_qid ) {
-			Q = Query(qid); // make new empty query TODO: does this work?
+			// create new query in collection
+			collection_[ qid ] = Query(qid);
+			map<string, Query>::iterator Q = collection_.find(qid);
+			cout << "reading relevance scores... " << endl;
 			while(getline( *rels, rel_record )){
 				vector<string> rel_parts;
 				splitOnTabs( rel_record, rel_parts );
@@ -215,16 +214,17 @@ void QueryCollection::loadQueries()
 					break;
 				}
 				else {
-					Q.setRelevantDocs( rel_doc, rel_score );
+					Q->second.setRelevantDocs( rel_doc, rel_score );
 				}
 
+
 			}
-		collection_[ qid ] = Q; // pointer?
-		// increase num_docs
-		num_docs_ += 1;
-		prev_qid = qid;
+			cout << "have " << Q->second.relevant_docs_.size() << " relevant docs." << endl;
+			Q->second.printRelDocs();
+			num_docs_ += 1;
+			prev_qid = qid;
 		}
-sentence_qid_map_[num_sentences] = qid;
+		sentence_qid_map_[num_sentences] = qid;
 		num_sentences += 1;
 
 
@@ -285,7 +285,9 @@ void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok )
 
 map<string, Query >::iterator QueryCollection::getQuery( unsigned sent_id )
 {
+	cout << "Finding query for sentence " << sent_id << endl;
 	string qid = sentence_qid_map_[ sent_id ];
+	cout << "Found query ID: " << qid << endl;
 	return collection_.find( qid );
 
 }

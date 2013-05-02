@@ -7,7 +7,7 @@
 
 #include <math.h>
 #include <iostream>
-
+#include <algorithm>
 #include "document.h"
 
 
@@ -18,7 +18,7 @@ TextItem::TextItem( const string& docid ): tf_vector_()
 {
   doc_id_ = docid;
   doc_size_ = 0;
-  cout << "Made new TextItem!" << endl;
+// cout << "Made new TextItem!" << endl;
 }
 
 // inline?
@@ -47,7 +47,9 @@ void TextItem::generateTfVector( vector<WordID>& text )
 
 Document::Document( const string& docid)
 : TextItem( docid ), weighted_vector_()
-{}
+{
+	cerr << " created new Document: " << docid <<  endl;
+	}
 
 
 void Document::generateBM25Vector( map<WordID, unsigned>& dftable,
@@ -79,6 +81,7 @@ void Document::generateBM25Vector( map<WordID, unsigned>& dftable,
 
 double Document::getScoreForQueryTerm( WordID s )
 {
+
 	map<WordID, double>::iterator pos = weighted_vector_.find(s);
 	if ( pos != weighted_vector_.end() ){
 		return pos->second;
@@ -99,7 +102,9 @@ double Document::BM25( double tf, double df, double avg_len, double num_docs,
 
 Query::Query( const string& docid )
 : TextItem( docid ), relevant_docs_(), sentences_(), terms_()
-{}
+{
+	cerr << " created new Query: " << docid <<  endl;
+}
 
 void Query::setRelevantDocs( string& docid, unsigned relscore )
 {
@@ -110,6 +115,7 @@ void Query::setSentence( unsigned sent_id, vector<WordID>& text )
 {
 	sentences_[sent_id] = text;
 }
+
 
 // TODO: is this being used?
 //vector<string> Query::getSentences()
@@ -147,6 +153,27 @@ void Query::setTerms( unsigned sentId, vector<WordID>& text ){
 			terms_.insert( it->second.at(i) );
 		}
 	}
+}
+
+void Query::printRelDocs(){
+	cout << "relevant documents for query " << doc_id_ << ": ";
+	for ( map<string, unsigned>::iterator iter = relevant_docs_.begin(); iter != relevant_docs_.end(); ++iter){
+		cout << iter->first << "	" << iter->second <<  endl;
+	}
+}
+
+vector<unsigned> Query::getSortedRelevances( ){
+
+//	cout << "returning sorted vector" << endl;
+	vector<unsigned> rels;
+	for ( map<string, unsigned>::iterator iter = relevant_docs_.begin(); iter != relevant_docs_.end(); ++iter){
+		rels.push_back( iter->second );
+//		cout << iter->second << endl;
+
+	}
+
+	sort( rels.begin(), rels.end(), std::greater<unsigned>());
+	return rels;
 }
 
 // use vectors instead?

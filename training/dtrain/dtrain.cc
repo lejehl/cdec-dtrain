@@ -146,7 +146,7 @@ main(int argc, char** argv)
   string doc_fn =  cfg["doc_file"].as<string>();
   string rels_fn =  cfg["rel_file"].as<string>();
 
-
+  cerr << "creating scorer ..." << endl;
   LocalScorer* scorer;
   if (scorer_str == "bleu") {
     scorer = dynamic_cast<BleuScorer*>(new BleuScorer);
@@ -174,6 +174,7 @@ main(int argc, char** argv)
   }
   vector<score_t> bleu_weights;
   scorer->Init(N, bleu_weights);
+  cerr << "done" << endl;
 
   // setup decoder observer
   MT19937 rng; // random number generator, only for forest sampling
@@ -184,13 +185,16 @@ main(int argc, char** argv)
     observer = dynamic_cast<KSampler*>(new KSampler(k, &rng));
   observer->SetScorer(scorer);
 
+
   // init weights
+  cerr << "initialize weights... " << endl;
   vector<weight_t>& dense_weights = decoder.CurrentWeightVector();
   SparseVector<weight_t> lambdas, cumulative_penalties, w_average;
   if (cfg.count("input_weights")) Weights::InitFromFile(cfg["input_weights"].as<string>(), &dense_weights);
   Weights::InitSparseVector(dense_weights, &lambdas);
 
   // meta params for perceptron, SVM
+  cerr  << "set meta parameters ... " << endl;
   weight_t eta = cfg["learning_rate"].as<weight_t>();
   weight_t gamma = cfg["gamma"].as<weight_t>();
 
@@ -200,6 +204,7 @@ main(int argc, char** argv)
   if (gamma==0 && loss_margin==0) faster_perceptron = true;
 
   // l1 regularization
+  cerr << "set regularization params ... " << endl;
   bool l1naive = false;
   bool l1clip = false;
   bool l1cumul = false;
@@ -213,11 +218,13 @@ main(int argc, char** argv)
   }
 
   // output
+  cerr << "set input and output ... " << endl;
   string output_fn = cfg["output"].as<string>();
   // input
   string input_fn = cfg["input"].as<string>();
   ReadFile input(input_fn);
   // buffer input for t > 0
+  cerr << "buffer input and read refs ... " << endl;
   vector<string> src_str_buf;          // source strings (decoder takes only strings)
   vector<vector<WordID> > ref_ids_buf; // references as WordID vecs
   string refs_fn = cfg["refs"].as<string>();
@@ -267,7 +274,7 @@ main(int argc, char** argv)
       cerr << setw(25) << "stop_after " << stop_after << endl;
     if (!verbose) cerr << "(a dot represents " << DTRAIN_DOTS << " inputs)" << endl;
   }
-
+  cerr << "finished setup .. " << endl;
 
   for (unsigned t = 0; t < T; t++) // T epochs
   {
@@ -361,10 +368,10 @@ main(int argc, char** argv)
     f_count += observer->get_f_count();
     list_sz += observer->get_sz();
 
-    // does this work?
-    if ( t == 0 && scorer_str == "map" ){
-    	scorer->addDecodedSrc( (*samples)[0].w );
-    }
+    // does this work? NO!
+//    if ( t == 0 && scorer_str == "map" ){
+//    	scorer->addDecodedSrc( (*samples)[0].w );
+//    }
 
     // weight updates
     // don't do an update for first iteration of MAP
@@ -447,7 +454,7 @@ main(int argc, char** argv)
     ++ii;
     // only for map
     if (scorer_str == "map") {
-    	scorer->increaseIter();
+    	scorer->increaseIter( );
     }
 
   } // input loop
@@ -458,9 +465,10 @@ main(int argc, char** argv)
 
   if (t == 0) {
     in_sz = ii; // remember size of input (# lines)
-    if ( scorer_str == "map"){
-    	scorer->finishedFirstEpoch(); // tell mapscorer that we are done with first epoch.
-    }
+//    if ( scorer_str == "map"){
+//    	cerr << "finished first epoch. " << endl;
+////    	scorer->finishedFirstEpoch(); // tell mapscorer that we are done with first epoch.
+//    }
   }
 
   // print some stats
@@ -518,7 +526,8 @@ main(int argc, char** argv)
   }
   if (t+1 != T && !quiet) cerr << endl;
 
-  if (noup || (scorer_str == "map" && t == 0 )) break;
+  if (noup) break;
+  if ( scorer_str == "map" && t == 0 ) continue;
 
   // write weights to file
   if (select_weights == "best" || keep) {
