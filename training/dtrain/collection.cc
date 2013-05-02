@@ -15,8 +15,7 @@ using namespace dtrain;
 Collection::Collection( const string& filename )//: collection_()
 {
 	infile_ = filename;
-//	num_tabs_ = num_tabs;
-	num_docs_ = 0; // braucht man das?
+	num_docs_ = 0;
 	cout << "Made new collection: " <<  "filename: " << infile_
 			<< ", num docs: " << num_docs_ << endl;
 }
@@ -42,34 +41,13 @@ void Collection::tokenize( string& text, vector<string>& text_tok )
 	boost::split(text_tok, text, boost::is_any_of(" "));
 }
 
-//void Collection::printVector( vector<string> & vec )
-//{
-//	for ( unsigned i = 0; i < vec.size(); i++ )
-//	{
-//		cout << vec[i] << " ";
-//	}
-////	cout << endl;
-//}
-
-//void Collection::split_on_tabs( stringstream& line, vector<string>& parts )
-//{
-//		for ( int i=0; i<num_tabs_; i++ ){
-//			string tmp;
-//			getline( line, tmp,'\t');
-//			parts.push_back( tmp );
-//		}
-//		string tmp;
-//		getline( line, tmp );
-//		parts.push_back( tmp );
-
-//}
 
 DocumentCollection::DocumentCollection( string& filename )
 : Collection( filename ), collection_(), dftable_()
 {
 	avg_len_ = 0.0;
 	cout << "filename " << infile_ << endl;
-	// TODO: this will not work for many docs!!
+	// TODO: optimise for larger document collections
 	loadDocs();
 }
 
@@ -87,6 +65,10 @@ void DocumentCollection::generateDfTable( )
 
 }
 
+/*
+ * for each document-id, populate the document collection.
+ * calculate the dftable, bm25 weights and average document length
+ */
 void DocumentCollection::loadDocs(  )
 {
 	cerr << " loading documents..." << endl;
@@ -100,19 +82,18 @@ void DocumentCollection::loadDocs(  )
 		splitOnTabs( in, parts );
 		string docid = parts[0];
 		string text = parts[1];
-//		cout << "docid " << docid << endl; //debug
-//		cout << "text " << text << endl;//debug
+
 		//tokenize
 		vector<string> text_tok;
 		tokenize( text, text_tok );
 
-		//create Document and geenrate tf vector
+		//create Document and generate tf vector
 		vector<WordID> word_id_vec;
 		register_and_convert( text_tok, word_id_vec );
-		Document Doc( docid ) ;
-		Doc.generateTfVector( word_id_vec );
-//		Doc.printTfVector();
-		collection_[ docid ] = Doc; // pointer?
+		collection_[ docid ] = Document( docid );
+		map<string, Document>::iterator Doc = collection_.find(docid);
+		Doc->second.generateTfVector( word_id_vec );
+
 		// increase num_docs
 		num_docs_ += 1;
 		}
@@ -122,29 +103,17 @@ void DocumentCollection::loadDocs(  )
 	// make dftable from tfvectors
 	cerr << " making dftable..." << endl;
 	generateDfTable( );
-//
-//
-//	//debug: print dftable
-//	cerr << " dftable: ";
-//	map<WordID,unsigned>::iterator iter;
-//			for ( iter=dftable_.begin(); iter != dftable_.end(); ++iter){
-//				cout << iter->first << "\t" << iter->second << endl;
-//			}
-//			cout << endl;
-//
-//    // make bm25 weighted vectors from dftable and tfvectors
+
+   // make bm25 weighted vectors from dftable and tfvectors
 	cerr << " making BM25 vectors ... " << endl;
 	for (map<string,Document> ::iterator iter=collection_.begin(); iter != collection_.end(); ++iter)
 			{
 				double a = getAvgLen();
 				double n = getNumDocs();
 				iter->second.generateBM25Vector( dftable_, a, n);
-				//debug
-//				iter->second.printWeightedVector();
 			}
-//cerr << " finished Loading!" << endl << "filename: " << infile_ << endl
-			cerr << " finished." << endl << "num docs: " << num_docs_ << endl
-			<< "avg len: " << avg_len_ << endl << "collection size: " << collection_.size() << endl;
+//			cerr << " finished." << endl << "num docs: " << num_docs_ << endl
+//			<< "avg len: " << avg_len_ << endl << "collection size: " << collection_.size() << endl;
 
 
 }
@@ -152,11 +121,6 @@ void DocumentCollection::loadDocs(  )
 void DocumentCollection::averageDocLength()
 {
 	double total = 0.0;
-//	 map<string,Document>::iterator iter=collection_.begin();
-//	 cout << "key of first entry in collection_: " << iter->first << endl;
-//	 cout << "tf Vector: ";
-//	 iter->second.printTfVector();
-
 	for ( map<string,Document>::iterator iter=collection_.begin(); iter != collection_.end(); ++iter){
 		double l = double(iter->second.doc_size_);
 		total += l;
@@ -191,8 +155,6 @@ void QueryCollection::loadQueries()
 	string prev_qid = "";
 	string qid = "";
 	unsigned num_sentences = 0;
-
-	// make sure num_docs_ is 0?
 
 	while (getline( *input, in )) {
 		vector<string> parts;
@@ -233,35 +195,9 @@ void QueryCollection::loadQueries()
 	cout << "Finished Loading!" << endl << "filename: " << infile_ << endl
 			 << endl << "num docs: " << num_docs_ << endl
 			<< "collection size: " << collection_.size() << endl;
-//	printQueryCollection();
 
 }
 
-// todo: won't work with word IDs
-//void QueryCollection::printQueryCollection()
-//{
-//	cout << "QUERIES:" << endl;
-//	for (map<string, Query>::iterator iter = collection_.begin(); iter != collection_.end(); ++iter){
-//		cout << "QID: " << iter->first << "\t" << "RELS: " ;
-//		for ( map<string, unsigned>::iterator i = iter->second.relevant_docs_.begin(); i !=
-//				iter->second.relevant_docs_.end(); ++i ){
-//			cout << i->first << " " << i->second << ", ";
-//		}
-//		cout << "SENTENCES: ";
-//		for ( map<unsigned, vector<string>  >::iterator i = iter->second.sentences_.begin(); i !=
-//				iter->second.sentences_.end(); ++i ){
-//			cout << i->first << " ";
-//			printVector(i->second);
-//		}
-//	}
-//	cout << endl << "SID - QID MAP:" << endl;
-//	for (map<unsigned, string >::iterator iter = sentence_qid_map_.begin(); iter != sentence_qid_map_.end(); ++iter){
-//		cout  << iter->first << " " << iter->second << ",";
-//	}
-//
-//	cout << endl;
-//
-//}
 
 void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok )
 {
@@ -273,15 +209,6 @@ void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok )
 
 }
 
-//void QueryCollection::setSentence( unsigned sentid, string & sentence  )
-//{
-//	vector<string> text_tok;
-//	tokenize( sentence, text_tok);
-//	string qid = sentence_qid_map_[ sentid ];
-//	Query * qPtr;
-//	qPtr = & collection_[qid];// TODO: is this a pointer to the query with ID qid?
-//	qPtr->setSentence( sentid, text_tok);
-//}
 
 map<string, Query >::iterator QueryCollection::getQuery( unsigned sent_id )
 {

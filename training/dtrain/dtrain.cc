@@ -1,4 +1,10 @@
 #include "dtrain.h"
+#include "score.h"
+#include "kbestget.h"
+#include "ksampler.h"
+#include "pairsampling.h"
+
+using namespace dtrain;
 
 
 bool
@@ -22,7 +28,7 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
     ("hi_lo",             po::value<float>()->default_value(0.1),                   "hi and lo (X) for XYX (default 0.1), <= 0.5")
     ("pair_threshold",    po::value<score_t>()->default_value(0.),                         "bleu [0,1] threshold to filter pairs")
     ("N",                 po::value<unsigned>()->default_value(4),                                          "N for Ngrams (BLEU)")
-    ("scorer",            po::value<string>()->default_value("stupid_bleu"),      "scoring: bleu, stupid_, smooth_, approx_, lc_")
+    ("scorer",            po::value<string>()->default_value("stupid_bleu"), "scoring: bleu, stupid_, smooth_, approx_, lc_, map")
     ("learning_rate",     po::value<weight_t>()->default_value(1.0),                                              "learning rate")
     ("gamma",             po::value<weight_t>()->default_value(0.),                            "gamma for SVM (0 for perceptron)")
     ("select_weights",    po::value<string>()->default_value("last"),     "output best, last, avg weights ('VOID' to throw away)")
@@ -35,6 +41,7 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
     ("loss_margin",       po::value<weight_t>()->default_value(0.),  "update if no error in pref pair but model scores this near")
     ("max_pairs",         po::value<unsigned>()->default_value(std::numeric_limits<unsigned>::max()), "max. # of pairs per Sent.")
     ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights")
+    // additional options for scoring with MAP
     ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
     ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
     ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations");
@@ -141,7 +148,7 @@ main(int argc, char** argv)
   // scoring metric/scorer
   string scorer_str = cfg["scorer"].as<string>();
 
-  // only for map score:
+  // only for map score: read queries and docs
   string query_fn =  cfg["query_file"].as<string>();
   string doc_fn =  cfg["doc_file"].as<string>();
   string rels_fn =  cfg["rel_file"].as<string>();
@@ -149,25 +156,25 @@ main(int argc, char** argv)
   cerr << "creating scorer ..." << endl;
   LocalScorer* scorer;
   if (scorer_str == "bleu") {
-    scorer = dynamic_cast<BleuScorer*>(new BleuScorer);
+    scorer = static_cast<BleuScorer*>(new BleuScorer);
   } else if (scorer_str == "stupid_bleu") {
-    scorer = dynamic_cast<StupidBleuScorer*>(new StupidBleuScorer);
+    scorer = static_cast<StupidBleuScorer*>(new StupidBleuScorer);
   } else if (scorer_str == "fixed_stupid_bleu") {
-    scorer = dynamic_cast<FixedStupidBleuScorer*>(new FixedStupidBleuScorer);
+    scorer = static_cast<FixedStupidBleuScorer*>(new FixedStupidBleuScorer);
   } else if (scorer_str == "smooth_bleu") {
-    scorer = dynamic_cast<SmoothBleuScorer*>(new SmoothBleuScorer);
+    scorer = static_cast<SmoothBleuScorer*>(new SmoothBleuScorer);
   } else if (scorer_str == "sum_bleu") {
-    scorer = dynamic_cast<SumBleuScorer*>(new SumBleuScorer);
+    scorer = static_cast<SumBleuScorer*>(new SumBleuScorer);
   } else if (scorer_str == "sumexp_bleu") {
-    scorer = dynamic_cast<SumExpBleuScorer*>(new SumExpBleuScorer);
+    scorer = static_cast<SumExpBleuScorer*>(new SumExpBleuScorer);
   } else if (scorer_str == "sumwhatever_bleu") {
-    scorer = dynamic_cast<SumWhateverBleuScorer*>(new SumWhateverBleuScorer);
+    scorer = static_cast<SumWhateverBleuScorer*>(new SumWhateverBleuScorer);
   } else if (scorer_str == "approx_bleu") {
-    scorer = dynamic_cast<ApproxBleuScorer*>(new ApproxBleuScorer(N, approx_bleu_d));
+    scorer = static_cast<ApproxBleuScorer*>(new ApproxBleuScorer(N, approx_bleu_d));
   } else if (scorer_str == "lc_bleu") {
-    scorer = dynamic_cast<LinearBleuScorer*>(new LinearBleuScorer(N));
+	scorer = static_cast<LinearBleuScorer*>(new LinearBleuScorer(N));
   } else if (scorer_str == "map" ) {
-	scorer = dynamic_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn ));
+	scorer = static_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn ));
   } else {
     cerr << "Don't know scoring metric: '" << scorer_str << "', exiting." << endl;
     exit(1);
@@ -180,9 +187,9 @@ main(int argc, char** argv)
   MT19937 rng; // random number generator, only for forest sampling
   HypSampler* observer;
   if (sample_from == "kbest")
-    observer = dynamic_cast<KBestGetter*>(new KBestGetter(k, filter_type));
+    observer = static_cast<KBestGetter*>(new KBestGetter(k, filter_type));
   else
-    observer = dynamic_cast<KSampler*>(new KSampler(k, &rng));
+    observer = static_cast<KSampler*>(new KSampler(k, &rng));
   observer->SetScorer(scorer);
 
 
@@ -368,13 +375,9 @@ main(int argc, char** argv)
     f_count += observer->get_f_count();
     list_sz += observer->get_sz();
 
-    // does this work? NO!
-//    if ( t == 0 && scorer_str == "map" ){
-//    	scorer->addDecodedSrc( (*samples)[0].w );
-//    }
 
     // weight updates
-    // don't do an update for first iteration of MAP
+    // if using MAP, don't do an update for first iteration
     if (!noup || !( scorer_str == "map" && t == 0 ) ) {
       // get pairs
       vector<pair<ScoredHyp,ScoredHyp> > pairs;
@@ -452,7 +455,7 @@ main(int argc, char** argv)
     if (rescale) lambdas /= lambdas.l2norm();
 
     ++ii;
-    // only for map
+    // only for map: increase sentence count
     if (scorer_str == "map") {
     	scorer->increaseIter( );
     }
@@ -465,10 +468,7 @@ main(int argc, char** argv)
 
   if (t == 0) {
     in_sz = ii; // remember size of input (# lines)
-//    if ( scorer_str == "map"){
-//    	cerr << "finished first epoch. " << endl;
-////    	scorer->finishedFirstEpoch(); // tell mapscorer that we are done with first epoch.
-//    }
+
   }
 
   // print some stats
@@ -527,6 +527,7 @@ main(int argc, char** argv)
   if (t+1 != T && !quiet) cerr << endl;
 
   if (noup) break;
+  // only for MAP
   if ( scorer_str == "map" && t == 0 ) continue;
 
   // write weights to file

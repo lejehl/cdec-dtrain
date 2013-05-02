@@ -12,6 +12,7 @@
 
 using namespace std;
 
+
 MyHeap::MyHeap( unsigned size ): heap_(  )
 {
 	is_full_ = false;
@@ -20,6 +21,14 @@ MyHeap::MyHeap( unsigned size ): heap_(  )
 
 }
 
+/*
+* 1. assume that heap is sorted
+* 2a. If heap is not yet full: add element
+* 2b. else: if value of first element in heap > pair Value: stop,
+* else add element to heap
+*  3.Check if heap is full.
+* 4. Sort heap
+*/
 void MyHeap::addPair( pair<string, double> & new_pair ){
 //	cout << "Trying to add pair: " << "<" << new_pair.first << "," << new_pair.second << ">" << endl;
 	if ( is_full_ ){
@@ -37,7 +46,7 @@ void MyHeap::addPair( pair<string, double> & new_pair ){
 	}
 	sortByVal();
 	checkIfFull();
-	printHeap();
+//	printHeap();
 
 }
 

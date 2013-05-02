@@ -1,12 +1,15 @@
 #ifndef _DTRAIN_SCORE_H_
 #define _DTRAIN_SCORE_H_
 
+
 #include "kbestget.h"
 #include "collection.h"
 #include "myheap.h"
 #include "document.h"
+#include "dtrain.h"
 
 using namespace std;
+
 
 namespace dtrain
 {
@@ -146,48 +149,61 @@ struct BleuScorer : public LocalScorer
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
   void increaseIter() {}
+
 };
 
 struct StupidBleuScorer : public LocalScorer
 {
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
+
   void increaseIter() {}
+
 };
 
 struct FixedStupidBleuScorer : public LocalScorer
 {
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
+
   void increaseIter() {}
+
 };
 
 struct SmoothBleuScorer : public LocalScorer
 {
   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
+
   void increaseIter() {}
+
 };
 
 struct SumBleuScorer : public LocalScorer
 {
+
    score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
    void Reset() {}
    void increaseIter() {}
+
 };
 
 struct SumExpBleuScorer : public LocalScorer
 {
+
    score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
    void Reset() {}
    void increaseIter() {}
+
 };
 
 struct SumWhateverBleuScorer : public LocalScorer
 {
+
    score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
    void Reset() {}
    void increaseIter() {}
+
 };
 
 struct ApproxBleuScorer : public BleuScorer
@@ -228,6 +244,7 @@ struct LinearBleuScorer : public BleuScorer
     onebest_counts_.One();
   }
 };
+
 
 
 struct MapScorer : public LocalScorer

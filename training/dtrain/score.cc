@@ -279,28 +279,27 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
   return ret;
 }
 
-/*
- * MapScorer
- *
- * uses Average Precision of a query containing the current translation
- * optimize translations for retrieval
- */
+
 MapScorer::MapScorer( string query_file, string doc_file, string relevance_file )
 : docs_( doc_file ), queries_( query_file, relevance_file )
 {
-	// load document collection, query collection.
-	cerr << "called MapScorer constructor" << endl;
+//	cerr << "called MapScorer constructor" << endl;
 	iteration_ = 0;
 	isFirstEpoch_ = true;
 
 }
-//
 
+/*
+ * MapScorer
+ *
+ * uses Average Precision of a query containing the current translation
+ * to optimise translations for retrieval
+ */
 score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		const unsigned rank, const unsigned /*src_len*/ )
 {
 	if ( isFirstEpoch_ == true ) {
-//		cerr << " T=0, returning 0" << endl;
+
 		// set top-ranking sentence
 		if ( rank == 0 ) {
 			queries_.setSentence( iteration_, hyp );
@@ -311,7 +310,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 	map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
 	// set hypothesis terms
 	qIter->second.setTerms(iteration_, hyp );
-	// initialize heap
+	// initialise heap
 	MyHeap results( 10 ); //TODO: this should be a parameter
 	// run retrieval
 	retrieval( docs_, qIter->second.terms_, results );
@@ -344,14 +343,10 @@ void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap&
 }
 
 
-
-
-
-
 score_t MapScorer::averagePrecision( MyHeap& results,
     		Query& query )
 {
-	// reverse results
+	// reverse results (heap is in ascending order for retrieval)
 	results.reverseHeap();
 	cout << "calculating average precision" << endl;
 	score_t avPrec = 0.0;
@@ -365,7 +360,6 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 	vector<unsigned> rels = query.getSortedRelevances();
 	for ( unsigned i=0; i<rels.size() ; i++ ){
 		gold.at( i ) =  rels.at(i) ;
-//cout << "in relevant docs: " << i->first << "	" << i->second << endl;
 		cout << gold.at( i ) << " ";
 	}
 	cout << endl;
@@ -386,6 +380,7 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 
 	unsigned counter = 0;
 	double sum = 0.0;
+
 	// precision at i
 	for ( unsigned i = 0; i < gold.size(); i++ ){
 		if ( retrieved.at(i) >= gold.at(i) ){
@@ -401,11 +396,6 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 	return avPrec;
 }
 
-// in first epoch, fill the sentences_ map of the queries
-//void MapScorer::addDecodedSrc( vector<WordID>& sent ){
-//	queries_.setSentence( iteration_, sent );
-//
-//}
 
 } // namespace
 

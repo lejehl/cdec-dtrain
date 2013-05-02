@@ -1,14 +1,14 @@
 #ifndef _DTRAIN_KSAMPLER_H_
 #define _DTRAIN_KSAMPLER_H_
 
-#include "hg_sampler.h" // cdec
-#include "kbestget.h"
-#include "score.h"
+#include "hg_sampler.h"
 
 namespace dtrain
 {
 
+
 inline bool
+
 cmp_hyp_by_model_d(ScoredHyp a, ScoredHyp b)
 {
   return a.model > b.model;
