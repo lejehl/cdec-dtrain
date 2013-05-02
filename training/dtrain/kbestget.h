@@ -2,6 +2,7 @@
 #define _DTRAIN_KBESTGET_H_
 
 #include "kbest.h"
+#include "dtrain.h"
 
 namespace dtrain
 {

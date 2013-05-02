@@ -25,7 +25,6 @@ public:
 	unsigned doc_size_;
 	map<WordID, unsigned> tf_vector_;
 	void generateTfVector( vector<WordID>& text  );
-//	void printTfVector();
 };
 
 struct Document : public TextItem
@@ -34,7 +33,6 @@ public:
 	Document( const string& docid = "" );
 	map<WordID, double> weighted_vector_;
 	void generateBM25Vector( map<WordID, unsigned>& dftable, double avg_len, double num_docs );
-//	void printWeightedVector();
 	double getScoreForQueryTerm( WordID );
 private:
 	double BM25( double tf, double df, double avg_len, double num_docs, double k = 1.2, double b = 0.75);
@@ -53,12 +51,6 @@ public:
 	void setSentence( unsigned sent_id, vector<WordID>& text  );
 	void printRelDocs( );
 	vector<unsigned> getSortedRelevances();
-
-//	vector<string> getSentences( ); //braucht man das?
-//	vector<string> getSentences( unsigned sent_id, vector<WordID>& new_sentence);
-	// needed to generate a query with a new input sentence
-//	void generateQuery( vector<string>& ); -> einfach generateTfVector aufrufen!
-
 };
 
 
