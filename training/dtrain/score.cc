@@ -327,7 +327,7 @@ void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap&
 	// TODO: heap size should be a parameter!
 
 	// TODO: maybe collection should implement its own iterator?
-	cerr << " running retrieval... " << endl;
+//	cerr << " running retrieval... " << endl;
 	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
 			docIter != docs.collection_.end(); ++docIter ){
 		double score = 0.0;
@@ -351,15 +351,15 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 {
 	// reverse results (heap is in ascending order for retrieval)
 	results.reverseHeap();
-	cout << "calculating average precision" << endl;
+//	cout << "calculating average precision" << endl;
 	score_t avPrec = 0.0;
 
 	vector<unsigned> gold( results.size_ );
 	vector<unsigned> retrieved( results.size_ );
 
 	// create gold standard
-	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
-	cout << "getting gold standard from relevant docs ... " << endl;
+//	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
+	cout << "gold standard:" << endl;
 	vector<unsigned> rels = query.getSortedRelevances();
 	for ( unsigned i=0; i<rels.size() ; i++ ){
 		gold.at( i ) =  rels.at(i) ;
@@ -391,8 +391,8 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 			sum += (double) counter / (double)( i+1 );
 		}
 	}
-	cout << "sum:	" << sum << endl;
-	cout << "counter:	" << counter << endl;
+//	cout << "sum:	" << sum << endl;
+//	cout << "counter:	" << counter << endl;
 
 	// normalize by number of relevant docs
 	avPrec = sum/query.relevant_docs_.size();
