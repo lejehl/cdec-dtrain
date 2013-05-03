@@ -306,6 +306,9 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		}
 		return 0.0;
 	} else {
+	if ( rank == 0 ) {
+	cout << "MapScorer: Iteration "<< iteration_ <<  endl;
+	}
 	//	get query location
 	map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
 	// set hypothesis terms
