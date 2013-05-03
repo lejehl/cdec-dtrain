@@ -253,12 +253,12 @@ struct MapScorer : public LocalScorer
  	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
 // 	void addDecodedSrc( vector<WordID>& );
     inline void increaseIter( ){
-    	cerr << " MapScorer: Input line " << iteration_ << endl;
+//    	cerr << " MapScorer: Input line " << iteration_ << endl;
     	iteration_ += 1;
     }
 
     inline void Reset() {
-    	cerr << " Reset: called MapScorer implementation." << endl;
+//    	cerr << " Reset: called MapScorer implementation." << endl;
     	if ( isFirstEpoch_ ) {
     		isFirstEpoch_ = false;
     	}

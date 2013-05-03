@@ -182,7 +182,7 @@ void QueryCollection::loadQueries()
 
 			}
 			cout << "have " << Q->second.relevant_docs_.size() << " relevant docs." << endl;
-			Q->second.printRelDocs();
+//			Q->second.printRelDocs();
 			num_docs_ += 1;
 			prev_qid = qid;
 		}
@@ -212,9 +212,9 @@ void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok )
 
 map<string, Query >::iterator QueryCollection::getQuery( unsigned sent_id )
 {
-	cout << "Finding query for sentence " << sent_id << endl;
+//	cout << "Finding query for sentence " << sent_id << endl;
 	string qid = sentence_qid_map_[ sent_id ];
-	cout << "Found query ID: " << qid << endl;
+//	cout << "Found query ID: " << qid << endl;
 	return collection_.find( qid );
 
 }
