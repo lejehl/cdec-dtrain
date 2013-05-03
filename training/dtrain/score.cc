@@ -361,8 +361,12 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 //	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
 	cout << "gold standard:" << endl;
 	vector<unsigned> rels = query.getSortedRelevances();
-	for ( unsigned i=0; i<rels.size() ; i++ ){
+	for ( unsigned i=0; i<gold.size() ; i++ ){
+		try {
 		gold.at( i ) =  rels.at(i) ;
+		} catch ( const out_of_range& oor ) {
+			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
+		}
 		cout << gold.at( i ) << " ";
 	}
 	cout << endl;
