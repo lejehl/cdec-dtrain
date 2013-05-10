@@ -7,6 +7,7 @@
 #include "myheap.h"
 #include "document.h"
 #include "dtrain.h"
+#include "retrieval.h"
 
 using namespace std;
 
@@ -250,7 +251,7 @@ struct LinearBleuScorer : public BleuScorer
 struct MapScorer : public LocalScorer
 {
 	MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size = 10);
- 	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
+	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
 // 	void addDecodedSrc( vector<WordID>& );
     inline void increaseIter( ){
 //    	cerr << " MapScorer: Input line " << iteration_ << endl;
@@ -270,11 +271,12 @@ private:
 	unsigned iteration_;
  	DocumentCollection docs_;
  	QueryCollection queries_;
+ 	RetrievalEval eval_;
  	bool isFirstEpoch_;
  	unsigned heap_size_;
  	void retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results );
- 	score_t averagePrecision( MyHeap& results,
-    		Query& query, const unsigned rank );
+// 	score_t averagePrecision( MyHeap& results,
+//    		Query& query, const unsigned rank );
 };
 
 

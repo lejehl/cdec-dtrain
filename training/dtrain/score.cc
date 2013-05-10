@@ -281,7 +281,7 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
 
 
 MapScorer::MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size )
-: docs_( doc_file ), queries_( query_file, relevance_file )
+: docs_( doc_file ), queries_( query_file, relevance_file ), eval_()
 {
 //	cerr << "called MapScorer constructor" << endl;
 	iteration_ = 0;
@@ -324,7 +324,47 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 	// run retrieval
 	retrieval( docs_, qIter->second.terms_, results );
 	// calculate average precision
-	return averagePrecision( results, qIter->second, rank );
+	// reverse results (heap is in ascending order for retrieval)
+	results.reverseHeap();
+	//	cout << "calculating average precision" << endl;
+	Query& query = qIter->second;
+
+//	vector<unsigned> gold( query.relevant_docs_.size() );
+	vector<unsigned> retrieved( query.relevant_docs_.size() );
+	vector<unsigned> rels = query.getSortedRelevances();
+
+	// create gold standard
+//	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
+	if ( rank == 0){
+		cout << "gold standard:" << endl;
+//	}
+		for ( unsigned i=0; i<rels.size() ; i++ ){
+//		try {
+//		gold.at( i ) =  rels.at(i) ;
+//		} catch ( const out_of_range& oor ) {
+//			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
+//		}
+//		if ( rank == 0){
+			cout << rels.at( i ) << " ";
+		}
+	}
+	cout << endl;
+
+	// create results
+	if ( rank == 0){
+	cout << "k-best-results: " << endl;
+	}
+	for ( unsigned i =0; i < retrieved.size(); i++ ){
+		string docid = results.heap_.at(i).first;
+		if ( query.relevant_docs_.count(docid) == 1 ){
+			retrieved.at(i) =  query.relevant_docs_[docid] ;
+		}
+		cout << retrieved.at(i) << " ";
+	}
+
+
+	double score =  eval_.averagePrecision( rels, retrieved  );
+	return (score_t) score;
 	}
 }
 
@@ -351,70 +391,68 @@ void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap&
 }
 
 
-score_t MapScorer::averagePrecision( MyHeap& results,
-    		Query& query, const unsigned rank )
-{
-	// reverse results (heap is in ascending order for retrieval)
-	results.reverseHeap();
-//	cout << "calculating average precision" << endl;
-	score_t avPrec = 0.0;
-
-	vector<unsigned> gold( results.size_ );
-	vector<unsigned> retrieved( results.size_ );
-
-	// create gold standard
-//	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
-	if ( rank == 0){
-	cout << "gold standard:" << endl;
-	}
-	vector<unsigned> rels = query.getSortedRelevances();
-	for ( unsigned i=0; i<gold.size() ; i++ ){
-		try {
-		gold.at( i ) =  rels.at(i) ;
-		} catch ( const out_of_range& oor ) {
-//			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
-		}
-		if ( rank == 0){
-		cout << gold.at( i ) << " ";
-		}
-	}
-	cout << endl;
-
-	// create results
-	if ( rank == 0){
-	cout << "k-best-results: " << endl;
-	}
-	for ( unsigned i =0; i < results.heap_.size(); i++ ){
-		string docid = results.heap_.at(i).first;
-		if ( query.relevant_docs_.count(docid) == 1 ){
-			retrieved.at(i) =  query.relevant_docs_[docid] ;
-		}
+//score_t MapScorer::averagePrecision( MyHeap& results,
+//    		Query& query, const unsigned rank )
+//{
+//	// reverse results (heap is in ascending order for retrieval)
+//	results.reverseHeap();
+////	cout << "calculating average precision" << endl;
+//	score_t avPrec = 0.0;
 //
-	}
+//	vector<unsigned> gold( results.size_ );
+//	vector<unsigned> retrieved( results.size_ );
+//
+//	// create gold standard
+////	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
+//	if ( rank == 0){
+//	cout << "gold standard:" << endl;
+//	}
+//	vector<unsigned> rels = query.getSortedRelevances();
+//	for ( unsigned i=0; i<gold.size() ; i++ ){
+//		try {
+//		gold.at( i ) =  rels.at(i) ;
+//		} catch ( const out_of_range& oor ) {
+////			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
+//		}
+//		if ( rank == 0){
+//		cout << gold.at( i ) << " ";
+//		}
+//	}
 //	cout << endl;
+//
+//	// create results
+//	if ( rank == 0){
+//	cout << "k-best-results: " << endl;
+//	}
+//	for ( unsigned i =0; i < results.heap_.size(); i++ ){
+//		string docid = results.heap_.at(i).first;
+//		if ( query.relevant_docs_.count(docid) == 1 ){
+//			retrieved.at(i) =  query.relevant_docs_[docid] ;
+//		}
+////
+//	}
+////	cout << endl;
+//
+//	unsigned counter = 0;
+//	double sum = 0.0;
+//
+//	// precision at i
+//	for ( unsigned i = 0; i < gold.size(); i++ ){
+//		if ( retrieved.at(i) >= gold.at(i) ){
+//			counter++;
+//			sum += (double) counter / (double)( i+1 );
+//		}
+//	}
+////	cout << "sum:	" << sum << endl;
+////	cout << "counter:	" << counter << endl;
+//
+//	// normalize by number of relevant docs
+//	avPrec = sum/query.relevant_docs_.size();
+//	cout << "\t" << avPrec;
+//
+//	return avPrec;
+//}
 
-	unsigned counter = 0;
-	double sum = 0.0;
-
-	// precision at i
-	for ( unsigned i = 0; i < gold.size(); i++ ){
-		if ( retrieved.at(i) >= gold.at(i) ){
-			counter++;
-			sum += (double) counter / (double)( i+1 );
-		}
-	}
-//	cout << "sum:	" << sum << endl;
-//	cout << "counter:	" << counter << endl;
-
-	// normalize by number of relevant docs
-	avPrec = sum/query.relevant_docs_.size();
-	for (unsigned i = 0; i < retrieved.size(); i++ ){
-		cout << retrieved.at(i) << " ";
-	}
-	cout << "\t" << avPrec;
-
-	return avPrec;
-}
 
 
 } // namespace

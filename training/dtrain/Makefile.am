@@ -1,6 +1,6 @@
-bin_PROGRAMS = dtrain 
+bin_PROGRAMS = dtrain test-scorer
 
-dtrain_SOURCES = dtrain.cc score.cc dtrain.h kbestget.h ksampler.h pairsampling.h score.h document.h document.cc collection.h collection.cc myheap.h myheap.cc viterbiget.h
+dtrain_SOURCES = dtrain.cc score.cc dtrain.h kbestget.h ksampler.h pairsampling.h score.h document.h document.cc collection.h collection.cc myheap.h myheap.cc viterbiget.h retrieval.h retrieval.cc
 dtrain_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
 
 #test_collection_SOURCES = collection.cc document.cc test-collection.cc collection.h  document.h
@@ -12,6 +12,8 @@ dtrain_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mte
 #test_heap_SOURCES = myheap.cc test-heap.cc myheap.h
 #test_heap_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
 
+#test_scorer_SOURCES = test-scorer.cc retrieval.h retrieval.cc
+#test_scorer_LDADD = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
 
 AM_CPPFLAGS = -W -Wall -Wno-sign-compare -I$(top_srcdir)/utils -I$(top_srcdir)/decoder -I$(top_srcdir)/mteval
 
