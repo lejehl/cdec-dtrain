@@ -37,7 +37,7 @@ void TextItem::generateTfVector( vector<WordID>& text )
 Document::Document( const string& docid)
 : TextItem( docid ), weighted_vector_()
 {
-	cerr << " created new Document: " << docid <<  endl;
+//	cerr << " created new Document: " << docid <<  endl;
 	}
 
 
@@ -83,7 +83,7 @@ double Document::BM25( double tf, double df, double avg_len, double num_docs,
 Query::Query( const string& docid )
 : TextItem( docid ), relevant_docs_(), sentences_(), terms_()
 {
-	cerr << " created new Query: " << docid <<  endl;
+//	cerr << " created new Query: " << docid <<  endl;
 }
 
 void Query::setRelevantDocs( string& docid, unsigned relscore )

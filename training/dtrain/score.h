@@ -249,7 +249,7 @@ struct LinearBleuScorer : public BleuScorer
 
 struct MapScorer : public LocalScorer
 {
-	MapScorer( string query_file, string doc_file, string relevance_file );
+	MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size = 10);
  	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
 // 	void addDecodedSrc( vector<WordID>& );
     inline void increaseIter( ){
@@ -260,6 +260,7 @@ struct MapScorer : public LocalScorer
     inline void Reset() {
 //    	cerr << " Reset: called MapScorer implementation." << endl;
     	if ( isFirstEpoch_ ) {
+//    		cerr << "setting isFirstEpoch_ to false." << endl;
     		isFirstEpoch_ = false;
     	}
 		iteration_ = 0;
@@ -270,9 +271,10 @@ private:
  	DocumentCollection docs_;
  	QueryCollection queries_;
  	bool isFirstEpoch_;
+ 	unsigned heap_size_;
  	void retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results );
  	score_t averagePrecision( MyHeap& results,
-    		Query& query );
+    		Query& query, const unsigned rank );
 };
 
 

@@ -3,6 +3,7 @@
 #include "kbestget.h"
 #include "ksampler.h"
 #include "pairsampling.h"
+#include "viterbiget.h"
 
 using namespace dtrain;
 
@@ -44,7 +45,8 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
     // additional options for scoring with MAP
     ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
     ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
-    ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations");
+    ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations")
+    ("num_retrieved",	  po::value<unsigned>()->default_value(10),					  "mapscoring: number of retrieved documents");
 
   po::options_description cl("Command Line Options");
   cl.add_options()
@@ -152,6 +154,7 @@ main(int argc, char** argv)
   string query_fn =  cfg["query_file"].as<string>();
   string doc_fn =  cfg["doc_file"].as<string>();
   string rels_fn =  cfg["rel_file"].as<string>();
+  unsigned num_retr = cfg["num_retrieved"].as<unsigned>();
 
   cerr << "creating scorer ..." << endl;
   LocalScorer* scorer;
@@ -174,7 +177,7 @@ main(int argc, char** argv)
   } else if (scorer_str == "lc_bleu") {
 	scorer = static_cast<LinearBleuScorer*>(new LinearBleuScorer(N));
   } else if (scorer_str == "map" ) {
-	scorer = static_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn ));
+	scorer = static_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn, num_retr ));
   } else {
     cerr << "Don't know scoring metric: '" << scorer_str << "', exiting." << endl;
     exit(1);
@@ -283,6 +286,36 @@ main(int argc, char** argv)
   }
   cerr << "finished setup .. " << endl;
 
+  //  if MAP is used, do one pass over the data and set the viterbi translations in the scorer.
+  if ( scorer_str == "map" ) {
+  	  cerr << "setting viterbi translations" << endl;
+
+  	  ViterbiGetter* v = new ViterbiGetter();
+  	  string in;
+  	  unsigned it = 0;
+  	  while(getline(*input, in)){
+  //		  if ( ii+1 % 5 == 0 ){
+  			  cerr << "." ;
+  //		  	  }
+  		  if ( (it+1) % 30 == 0 ){
+  		  			  cerr << it+1 << endl;
+  		  		  }
+  		  decoder.Decode( in, v);
+  		  score_t s;
+  		  // use this to set the translation. UGLY!
+  		  s = scorer->Score( v->transl_, v->transl_, 0, 0 );
+  		  scorer->increaseIter();
+  		  src_str_buf.push_back( in );
+  		  it++;
+
+  	  }
+  	  in_sz = it;
+  	  scorer->Reset();
+  	  cerr << endl;
+  	  cerr << "done" << endl;
+
+    }
+
   for (unsigned t = 0; t < T; t++) // T epochs
   {
 
@@ -298,9 +331,12 @@ main(int argc, char** argv)
 
     string in;
     bool next = false, stop = false; // next iteration or premature stop
-    if (t == 0) {
+    if ( (t == 0) && (scorer_str != "map") ) {
+//    	cerr << "this shoulnd't happen if scoring with map" << endl;
       if(!getline(*input, in)) next = true;
+//      cerr << "no lines in input " << endl;
     } else {
+//    	cerr << "ii == sz - this also shouldn't happen" << endl;
       if (ii == in_sz) next = true; // stop if we reach the end of our input
     }
     // stop after X sentences (but still go on for those)
@@ -331,9 +367,11 @@ main(int argc, char** argv)
     if (next || stop) break;
 
     // weights
+//    cerr << "initialize weights" << endl;
     lambdas.init_vector(&dense_weights);
 
     // getting input
+//    cerr << "getting input" << endl;
     vector<WordID> ref_ids; // reference as vector<WordID>
     if (t == 0) {
       string r_;
@@ -342,17 +380,24 @@ main(int argc, char** argv)
       boost::split(ref_tok, r_, boost::is_any_of(" "));
       register_and_convert(ref_tok, ref_ids);
       ref_ids_buf.push_back(ref_ids);
+      if ( scorer_str != "map" ){
+//    	  cerr << "shouldn't happen with map" << endl;
       src_str_buf.push_back(in);
+      }
     } else {
       ref_ids = ref_ids_buf[ii];
     }
+//    cerr << "decode" << endl;
     observer->SetRef(ref_ids);
-    if (t == 0)
+    if ( (t == 0) && ( scorer_str != "map") ){
+//    	cerr << "shouldn't happen with map" << endl;
       decoder.Decode(in, observer);
+    }
     else
       decoder.Decode(src_str_buf[ii], observer);
 
     // get (scored) samples
+//    cerr << "get scored samples" << endl;
     vector<ScoredHyp>* samples = observer->GetSamples();
 
     if (verbose) {
@@ -378,7 +423,7 @@ main(int argc, char** argv)
 
     // weight updates
     // if using MAP, don't do an update for first iteration
-    if (!noup || !( scorer_str == "map" && t == 0 ) ) {
+    if (!noup ) {
       // get pairs
       vector<pair<ScoredHyp,ScoredHyp> > pairs;
       if (pair_sampling == "all")

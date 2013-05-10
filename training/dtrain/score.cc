@@ -280,12 +280,13 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
 }
 
 
-MapScorer::MapScorer( string query_file, string doc_file, string relevance_file )
+MapScorer::MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size )
 : docs_( doc_file ), queries_( query_file, relevance_file )
 {
 //	cerr << "called MapScorer constructor" << endl;
 	iteration_ = 0;
 	isFirstEpoch_ = true;
+	heap_size_= heap_size;
 
 }
 
@@ -298,6 +299,7 @@ MapScorer::MapScorer( string query_file, string doc_file, string relevance_file 
 score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		const unsigned rank, const unsigned /*src_len*/ )
 {
+//	cerr << "Called Score()" << endl;
 	if ( isFirstEpoch_ == true ) {
 
 		// set top-ranking sentence
@@ -306,25 +308,28 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		}
 		return 0.0;
 	} else {
-	if ( rank == 0 ) {
-	cout << "MapScorer: Iteration "<< iteration_ <<  endl;
-	}
 	//	get query location
 	map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
+	if ( rank == 0 ) {
+		if (iteration_ == 0 ){
+			cout << "\n\nNEW EPOCH:" << endl;
+		}
+	cout << "\n==============================="<< endl << "Sentence "<< iteration_ <<
+			" qid: " << qIter->second.doc_id_ << endl;
+	}
 	// set hypothesis terms
 	qIter->second.setTerms(iteration_, hyp );
 	// initialise heap
-	MyHeap results( 10 ); //TODO: this should be a parameter
+	MyHeap results( heap_size_ ); //TODO: this should be a parameter
 	// run retrieval
 	retrieval( docs_, qIter->second.terms_, results );
 	// calculate average precision
-	return averagePrecision( results, qIter->second );
+	return averagePrecision( results, qIter->second, rank );
 	}
 }
 
 void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results )
 {
-	// TODO: heap size should be a parameter!
 
 	// TODO: maybe collection should implement its own iterator?
 //	cerr << " running retrieval... " << endl;
@@ -347,7 +352,7 @@ void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap&
 
 
 score_t MapScorer::averagePrecision( MyHeap& results,
-    		Query& query )
+    		Query& query, const unsigned rank )
 {
 	// reverse results (heap is in ascending order for retrieval)
 	results.reverseHeap();
@@ -359,20 +364,26 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 
 	// create gold standard
 //	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
+	if ( rank == 0){
 	cout << "gold standard:" << endl;
+	}
 	vector<unsigned> rels = query.getSortedRelevances();
 	for ( unsigned i=0; i<gold.size() ; i++ ){
 		try {
 		gold.at( i ) =  rels.at(i) ;
 		} catch ( const out_of_range& oor ) {
-			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
+//			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
 		}
+		if ( rank == 0){
 		cout << gold.at( i ) << " ";
+		}
 	}
 	cout << endl;
 
 	// create results
-	cout << "results : " ;
+	if ( rank == 0){
+	cout << "k-best-results: " << endl;
+	}
 	for ( unsigned i =0; i < results.heap_.size(); i++ ){
 		string docid = results.heap_.at(i).first;
 		if ( query.relevant_docs_.count(docid) == 1 ){
@@ -380,10 +391,7 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 		}
 //
 	}
-	for (unsigned i = 0; i < retrieved.size(); i++ ){
-		cout << retrieved.at(i) << " ";
-	}
-	cout << endl;
+//	cout << endl;
 
 	unsigned counter = 0;
 	double sum = 0.0;
@@ -400,6 +408,11 @@ score_t MapScorer::averagePrecision( MyHeap& results,
 
 	// normalize by number of relevant docs
 	avPrec = sum/query.relevant_docs_.size();
+	for (unsigned i = 0; i < retrieved.size(); i++ ){
+		cout << retrieved.at(i) << " ";
+	}
+	cout << "\t" << avPrec;
+
 	return avPrec;
 }
 

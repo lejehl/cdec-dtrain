@@ -148,6 +148,7 @@ QueryCollection::QueryCollection( string& filename, string& relevance_file )
 void QueryCollection::loadQueries()
 {
 	cerr << " loading queries" << endl;
+	cout << "qid\tnum_rels" << endl;
 	ReadFile input( infile_ );
 	ReadFile rels( relfile_ );
 	string in;
@@ -164,7 +165,7 @@ void QueryCollection::loadQueries()
 			// create new query in collection
 			collection_[ qid ] = Query(qid);
 			map<string, Query>::iterator Q = collection_.find(qid);
-			cout << "reading relevance scores... " << endl;
+			cout << qid << "\t";
 			while(getline( *rels, rel_record )){
 				vector<string> rel_parts;
 				splitOnTabs( rel_record, rel_parts );
@@ -181,7 +182,7 @@ void QueryCollection::loadQueries()
 
 
 			}
-			cout << "have " << Q->second.relevant_docs_.size() << " relevant docs." << endl;
+			cout << Q->second.relevant_docs_.size() << endl;
 //			Q->second.printRelDocs();
 			num_docs_ += 1;
 			prev_qid = qid;
@@ -192,9 +193,9 @@ void QueryCollection::loadQueries()
 
 	}
 
-	cout << "Finished Loading!" << endl << "filename: " << infile_ << endl
-			 << endl << "num docs: " << num_docs_ << endl
-			<< "collection size: " << collection_.size() << endl;
+//	cout << "Finished Loading!" << endl << "filename: " << infile_ << endl
+//			 << endl << "num docs: " << num_docs_ << endl
+//			<< "collection size: " << collection_.size() << endl;
 
 }
 
