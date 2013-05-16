@@ -48,6 +48,7 @@ public:
 	set<WordID> terms_;
 	void setRelevantDocs( string& docid, unsigned relscore );
 	void setTerms( unsigned sent_id, vector<WordID>& text  );
+	void setTerms();
 	void setSentence( unsigned sent_id, vector<WordID>& text  );
 	void printRelDocs( );
 	vector<unsigned> getSortedRelevances();

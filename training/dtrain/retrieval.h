@@ -10,6 +10,10 @@
 
 #include <vector>
 
+#include "wordid.h"
+#include "collection.h"
+#include "myheap.h"
+
 
 using namespace std;
 
@@ -23,14 +27,17 @@ private:
 };
 
 //TODO
-//struct Retrieval {
-//	Retrieval( string query_file, string doc_file, string relevance_file, unsigned heap_size = 10 );
-// 	DocumentCollection docs_;
-// 	QueryCollection queries_;
-// 	RetrievalEval eval_;
-// 	unsigned heap_size_;
-// 	void retrieval( set<WordID>& query, MyHeap& results );
-//
-//
-//};
+struct Retrieval {
+	Retrieval( string scoring = "map",  unsigned heap_size = 10 );
+ 	unsigned heap_size_;
+	string scoring_;
+ 	void runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results );
+	double evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result_list  );
+	private:
+//		void retrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results );
+		double averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved );
+		double ndcg( vector<unsigned>& retrieved );
+		void getSortedRelevances( vector<unsigned>& gold, map<string, unsigned>& rels  );
+};
+
 #endif /* RETRIEVAL_H_ */
