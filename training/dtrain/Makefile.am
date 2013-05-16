@@ -1,7 +1,11 @@
-bin_PROGRAMS = dtrain test-scorer
+bin_PROGRAMS = dtrain test-retrieval
 
 dtrain_SOURCES = dtrain.cc score.cc dtrain.h kbestget.h ksampler.h pairsampling.h score.h document.h document.cc collection.h collection.cc myheap.h myheap.cc viterbiget.h retrieval.h retrieval.cc
 dtrain_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
+
+test_retrieval_SOURCES = test-retrieval.cc retrieval.cc retrieval.h document.cc collection.cc myheap.cc
+test_retrieval_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
+
 
 #test_collection_SOURCES = collection.cc document.cc test-collection.cc collection.h  document.h
 #test_collection_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
