@@ -68,9 +68,12 @@ double RetrievalEval::avPrecAtN( vector<unsigned>& gold, vector<unsigned>& retri
 Retrieval::Retrieval( string scoring, unsigned heap_size ){
 	heap_size_ = heap_size;
 	scoring_ = scoring;
+	cout << "created new instance of Retrieval" << endl <<
+			"scoring: " << scoring_ << " heap size: " << heap_size_ << endl;
 }
 
 void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results  ){
+	cout << "running retrieval" << endl;
 	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
 			docIter != docs.collection_.end(); ++docIter ){
 		double score = 0.0;
@@ -100,6 +103,7 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 		} catch ( const out_of_range& oor ) {
 			cerr << "This shouldn't happen!" << endl;
 		}
+		cout << retrieved.at(i) << " " ;
 	}
 	if (scoring_ == "map"){
 		vector<unsigned> gold;
@@ -108,6 +112,7 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 	} else {
 		score = ndcg( retrieved );
 	}
+	cout << "\t" << score << endl;
 	return score;
 }
 
@@ -148,6 +153,7 @@ double Retrieval::averagePrecision( vector<unsigned>& gold, vector<unsigned>& re
  * normalized discounted cumulative gain
  */
 double Retrieval::ndcg( vector<unsigned>& retrieved ){
+	cout << "Scoring: ndcg" << endl;
 	double dcg = (double) retrieved[0];
 	vector<double> normalizers;
 	normalizers.push_back( 1.0 );

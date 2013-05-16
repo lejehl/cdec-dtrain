@@ -46,9 +46,10 @@ DocumentCollection::DocumentCollection( string& filename )
 : Collection( filename ), collection_(), dftable_()
 {
 	avg_len_ = 0.0;
-	cout << "filename " << infile_ << endl;
+//	cout << "filename " << infile_ << endl;
 	// TODO: optimise for larger document collections
 	loadDocs();
+	cout << "Have " << num_docs_ << " documents." << endl;
 }
 
 
