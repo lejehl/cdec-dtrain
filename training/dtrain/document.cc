@@ -108,6 +108,7 @@ void Query::setTerms( unsigned sentId, vector<WordID>& text ){
 }
 
 void Query::setTerms( ){
+	cout << "called set Terms " << endl;
 	for (map<unsigned, vector<WordID> >::iterator it=sentences_.begin();
 			it != sentences_.end(); ++it  ){
 		for ( unsigned i=0; i < it->second.size(); i++ ){
