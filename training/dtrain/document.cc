@@ -107,6 +107,16 @@ void Query::setTerms( unsigned sentId, vector<WordID>& text ){
 	}
 }
 
+void Query::setTerms( ){
+	for (map<unsigned, vector<WordID> >::iterator it=sentences_.begin();
+			it != sentences_.end(); ++it  ){
+		for ( unsigned i=0; i < it->second.size(); i++ ){
+			terms_.insert( it->second.at(i) );
+		}
+	}
+}
+
+
 void Query::printRelDocs(){
 	cout << "relevant documents for query " << doc_id_ << ": ";
 	for ( map<string, unsigned>::iterator iter = relevant_docs_.begin(); iter != relevant_docs_.end(); ++iter){
