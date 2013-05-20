@@ -49,7 +49,7 @@ while( getline(*input, in) ) {
 	it ++;
 }
 cout << "run retrieval:" << endl;
-Retrieval R( "ndcg", 50);
+Retrieval R( "map", 50);
 MyHeap results(50);
 string id = "JP-2006003303-A";
 queries.collection_.at( id ).setTerms();
