@@ -49,12 +49,11 @@ while( getline(*input, in) ) {
 	it ++;
 }
 cout << "run retrieval:" << endl;
-Retrieval R( "map", 50);
-MyHeap results(50);
+Retrieval R( "map", 200);
+MyHeap results(200);
 string id = "JP-2006003303-A";
 queries.collection_.at( id ).setTerms();
 R.runRetrieval( queries.collection_.at( id ).terms_, docs, results   );
-results.reverseHeap();
 R.evaluateRetrieval( queries.collection_.at( id ).relevant_docs_, results );
 }
 
