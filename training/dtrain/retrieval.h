@@ -20,9 +20,10 @@ using namespace std;
 struct RetrievalEval {
 	RetrievalEval() {};
 
-	double avPrecAtN( vector<unsigned>& gold, vector<unsigned>& retrieved, unsigned n = 0 );
-private:
-	double averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved  );
+//	double avPrecAtN( vector<unsigned>& gold, vector<unsigned>& retrieved, unsigned n = 0 );
+//private:
+	double averagePrecision( unsigned num_rels, vector<unsigned>& retrieved  );
+	double ndcg( vector<unsigned>& retrieved );
 
 };
 
@@ -34,9 +35,10 @@ struct Retrieval {
  	void runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results );
 	double evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result_list  );
 	private:
+		RetrievalEval eval_;
 //		void retrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results );
-		double averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved );
-		double ndcg( vector<unsigned>& retrieved );
+//		double averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved );
+//		double ndcg( vector<unsigned>& retrieved );
 		void getSortedRelevances( vector<unsigned>& gold, map<string, unsigned>& rels  );
 };
 

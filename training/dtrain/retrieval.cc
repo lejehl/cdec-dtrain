@@ -16,31 +16,35 @@
 #include "myheap.h"
 
 using namespace std;
-
-double RetrievalEval::averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved ){
+/*
+ * average Precision, according to LETOR paper
+ * Liu et al. (SIGIR'07): LETOR: Benchmark Dataset for Research on
+ * Learning to Rank for Information Retrieval
+ */
+double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& retrieved ){
 	unsigned counter = 0;
 	double sum = 0.0;
 
-	// precision at i
+	// average precision at i
 	cout << "relevance (gold)\tsum(precision@rank)" << endl;
-	for ( unsigned i = 0; i < gold.size(); i++ ){
-		if ( retrieved.at(i) >= gold.at(i) ){
+	for ( unsigned i = 0; i < retrieved.size(); i++ ){
+		if ( retrieved.at(i) > 0 ){
 			counter++;
 			sum += (double) counter / (double)( i+1 );
 		}
-		cout << retrieved.at(i) << " (" << gold.at(i) << ") " ;
+		cout << retrieved.at(i) << " ( " << sum << ") " ;
 	}
-	cout << "\t" << sum;
 	double avPrec;
-
-	// normalize by number of RELEVANT docs
-	avPrec = sum/gold.size();
-//	cout << "\t" << avPrec;
+	// normalize by total number of RELEVANT docs
+	avPrec = sum/ (double) num_rels;
+	cout << "\t" << avPrec;
 	cout << endl;
 	return avPrec;
-
 }
 
+/*
+ * implementation after Wikipedia  - TODO: this needs to be fixed
+ */
 double RetrievalEval::ndcg( vector<unsigned>& retrieved ){
 	cout << "Scoring: ndcg" << endl;
 	double dcg = (double) retrieved[0];
@@ -135,7 +139,7 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 	if (scoring_ == "map"){
 		vector<unsigned> gold;
 		getSortedRelevances( gold, rels );
-		score =  eval_.averagePrecision(  gold, retrieved );
+		score =  eval_.averagePrecision(  gold.size(), retrieved );
 	} else {
 		score = eval_.ndcg( retrieved );
 	}
