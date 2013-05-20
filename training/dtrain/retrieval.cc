@@ -143,7 +143,6 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 	} else {
 		score = eval_.ndcg( retrieved );
 	}
-	cout << "\t" << score << endl;
 	return score;
 }
 

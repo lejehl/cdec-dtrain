@@ -155,6 +155,7 @@ main(int argc, char** argv)
   string doc_fn =  cfg["doc_file"].as<string>();
   string rels_fn =  cfg["rel_file"].as<string>();
   unsigned num_retr = cfg["num_retrieved"].as<unsigned>();
+  cout << "num_retrieved is " << num_retr << endl;
 
   cerr << "creating scorer ..." << endl;
   LocalScorer* scorer;

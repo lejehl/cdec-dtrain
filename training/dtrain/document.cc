@@ -121,18 +121,17 @@ void Query::setTerms( ){
 
 void Query::printRelDocs(){
 	cout << "relevant documents for query " << doc_id_ << ": ";
-	for ( map<string, unsigned>::iterator iter = relevant_docs_.begin(); iter != relevant_docs_.end(); ++iter){
-		cout << iter->first << "	" << iter->second <<  endl;
+	vector<unsigned> sorted_rels = getSortedRelevances();
+	for ( unsigned i=0; i<sorted_rels.size(); i++ ){
+		cout << sorted_rels[i] << " ";
 	}
+	cout << endl;
 }
 
 vector<unsigned> Query::getSortedRelevances( ){
-
-//	cout << "returning sorted vector" << endl;
 	vector<unsigned> rels;
 	for ( map<string, unsigned>::iterator iter = relevant_docs_.begin(); iter != relevant_docs_.end(); ++iter){
 		rels.push_back( iter->second );
-//		cout << iter->second << endl;
 	}
 	sort( rels.begin(), rels.end(), std::greater<unsigned>());
 	return rels;

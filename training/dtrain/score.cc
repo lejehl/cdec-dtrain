@@ -283,6 +283,8 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
 MapScorer::MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size, string scoring )
 : docs_( doc_file ), queries_( query_file, relevance_file ), retrieval_( scoring, heap_size_ )
 {
+	cout << "Created new MapScorer. " << endl
+			<< "scoring: " << scoring << " heap size: " << heap_size << endl;
 	iteration_ = 0;
 	isFirstEpoch_ = true;
 	heap_size_= heap_size;
