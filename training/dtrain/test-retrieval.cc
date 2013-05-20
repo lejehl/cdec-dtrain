@@ -54,7 +54,6 @@ MyHeap results(50);
 string id = "JP-2006003303-A";
 queries.collection_.at( id ).setTerms();
 R.runRetrieval( queries.collection_.at( id ).terms_, docs, results   );
-results.reverseHeap();
 R.evaluateRetrieval( queries.collection_.at( id ).relevant_docs_, results );
 }
 
