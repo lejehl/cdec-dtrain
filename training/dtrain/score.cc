@@ -280,10 +280,9 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
 }
 
 
-MapScorer::MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size )
-: docs_( doc_file ), queries_( query_file, relevance_file ), eval_()
+MapScorer::MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size, string scoring )
+: docs_( doc_file ), queries_( query_file, relevance_file ), retrieval_( scoring, heap_size_ )
 {
-//	cerr << "called MapScorer constructor" << endl;
 	iteration_ = 0;
 	isFirstEpoch_ = true;
 	heap_size_= heap_size;
@@ -299,10 +298,7 @@ MapScorer::MapScorer( string query_file, string doc_file, string relevance_file,
 score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		const unsigned rank, const unsigned /*src_len*/ )
 {
-//	cerr << "Called Score()" << endl;
 	if ( isFirstEpoch_ == true ) {
-
-		// set top-ranking sentence
 		if ( rank == 0 ) {
 			queries_.setSentence( iteration_, hyp );
 		}
@@ -320,65 +316,63 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 	// set hypothesis terms
 	qIter->second.setTerms(iteration_, hyp );
 	// initialise heap
-	MyHeap results( heap_size_ ); //TODO: this should be a parameter
+	MyHeap results( heap_size_ );
 	// run retrieval
-	retrieval( docs_, qIter->second.terms_, results );
-	// calculate average precision
-	// reverse results (heap is in ascending order for retrieval)
-	results.reverseHeap();
-	Query& query = qIter->second;
-	vector<unsigned> retrieved( heap_size_ );
-	vector<unsigned> rels = query.getSortedRelevances();
-
-	// print gold standard
-	if ( rank == 0){
-		cout << "gold standard:" << endl;
-		for ( unsigned i=0; i<rels.size() ; i++ ){
-			cout << rels.at( i ) << " ";
-		}
-	}
-	cout << endl;
+//	retrieval( docs_, qIter->second.terms_, results );
+	retrieval_.runRetrieval( qIter->second.terms_, docs_, results );
+	double score = retrieval_.evaluateRetrieval( qIter->second.relevant_docs_ , results );
+//	Query& query = qIter->second;
+//	vector<unsigned> retrieved( heap_size_ );
+//	vector<unsigned> rels = query.getSortedRelevances();
+//	// print gold standard
+//	if ( rank == 0){
+//		cout << "gold standard:" << endl;
+//		for ( unsigned i=0; i<rels.size() ; i++ ){
+//			cout << rels.at( i ) << " ";
+//		}
+//	}
+//	cout << endl;
 
 	// get relevance levels for retrieved docs
-	if ( rank == 0){
-	cout << "k-best-results: " << endl;
-	}
-	for ( unsigned i =0; i < retrieved.size(); i++ ){
-		try {
-			string docid = results.heap_.at(i).first;
-			if ( query.relevant_docs_.count(docid) == 1 ){
-				retrieved.at(i) =  query.relevant_docs_[docid] ;
-			}
-		} catch ( const out_of_range& oor ) {
-			cerr << "This shouldn't happen!" << endl;
-		}
-	}
-	double score =  eval_.avPrecAtN( rels, retrieved, heap_size_  );
+//	if ( rank == 0){
+//	cout << "k-best-results: " << endl;
+//	}
+//	for ( unsigned i =0; i < retrieved.size(); i++ ){
+//		try {
+//			string docid = results.heap_.at(i).first;
+//			if ( query.relevant_docs_.count(docid) == 1 ){
+//				retrieved.at(i) =  query.relevant_docs_[docid] ;
+//			}
+//		} catch ( const out_of_range& oor ) {
+//			cerr << "This shouldn't happen!" << endl;
+//		}
+//	}
+//	double score =  eval_.avPrecAtN( rels, retrieved, heap_size_  );
 	return (score_t) score;
 	}
 }
 
-void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results )
-{
-
-	// TODO: maybe collection should implement its own iterator?
-//	cerr << " running retrieval... " << endl;
-	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
-			docIter != docs.collection_.end(); ++docIter ){
-		double score = 0.0;
-		// TODO: query should have a term iterator?
-		for ( set<WordID>::iterator it = query.begin(); it != query.end(); ++it ){
-			score += docIter->second.getScoreForQueryTerm( *it );
-		}
-		// add to heap if score is greate than 0
-		if (score != 0.0){
-		pair<string, double> p = make_pair( docIter->first, score );
-		results.addPair( p );
-
-		}
-
-	}
-}
+//void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results )
+//{
+//
+//	// TODO: maybe collection should implement its own iterator?
+////	cerr << " running retrieval... " << endl;
+//	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
+//			docIter != docs.collection_.end(); ++docIter ){
+//		double score = 0.0;
+//		// TODO: query should have a term iterator?
+//		for ( set<WordID>::iterator it = query.begin(); it != query.end(); ++it ){
+//			score += docIter->second.getScoreForQueryTerm( *it );
+//		}
+//		// add to heap if score is greate than 0
+//		if (score != 0.0){
+//		pair<string, double> p = make_pair( docIter->first, score );
+//		results.addPair( p );
+//
+//		}
+//
+//	}
+//}
 
 
 //score_t MapScorer::averagePrecision( MyHeap& results,
