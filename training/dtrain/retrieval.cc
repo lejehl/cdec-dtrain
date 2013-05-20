@@ -37,7 +37,11 @@ double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& ret
 	double avPrec;
 	// normalize by total number of RELEVANT docs
 	avPrec = sum/ (double) num_rels;
-	cout << "\t" << avPrec;
+	cout << endl;
+	cout << "average Precision: " << avPrec << endl;
+	cout << "retrieved relevant docs: " << counter << endl;
+	cout << "total relevant docs: " << num_rels << endl;
+
 	cout << endl;
 	return avPrec;
 }
