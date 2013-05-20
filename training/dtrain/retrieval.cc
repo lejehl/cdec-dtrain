@@ -26,23 +26,22 @@ double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& ret
 	double sum = 0.0;
 
 	// average precision at i
-	cout << "relevance (gold)\tsum(precision@rank)" << endl;
+//	cout << "relevance (gold)\tsum(precision@rank)" << endl;
 	for ( unsigned i = 0; i < retrieved.size(); i++ ){
 		if ( retrieved.at(i) > 0 ){
 			counter++;
 			sum += (double) counter / (double)( i+1 );
 		}
-		cout << retrieved.at(i) << " ( " << sum << ") " ;
+		cout << retrieved.at(i) << " ";
 	}
 	double avPrec;
 	// normalize by total number of RELEVANT docs
 	avPrec = sum/ (double) num_rels;
-	cout << endl;
-	cout << "average Precision: " << avPrec << endl;
-	cout << "retrieved relevant docs: " << counter << endl;
-	cout << "total relevant docs: " << num_rels << endl;
-
-	cout << endl;
+//	cout << endl;
+//	cout << "average Precision: " << avPrec << endl;
+//	cout << "retrieved relevant docs: " << counter << endl;
+//	cout << "total relevant docs: " << num_rels << endl;
+	cout << "\t" << avPrec << endl;
 	return avPrec;
 }
 

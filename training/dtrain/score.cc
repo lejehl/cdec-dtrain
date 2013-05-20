@@ -312,6 +312,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		}
 	cout << "\n==============================="<< endl << "Sentence "<< iteration_ <<
 			" qid: " << qIter->second.doc_id_ << endl;
+	qIter->second.printRelDocs();
 	}
 	// set hypothesis terms
 	qIter->second.setTerms(iteration_, hyp );
