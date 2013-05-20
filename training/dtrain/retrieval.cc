@@ -32,7 +32,7 @@ double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& ret
 			counter++;
 			sum += (double) counter / (double)( i+1 );
 		}
-		cout << retrieved.at(i) << " ";
+//		cout << retrieved.at(i) << " ";
 	}
 	double avPrec;
 	// normalize by total number of RELEVANT docs
@@ -41,7 +41,7 @@ double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& ret
 //	cout << "average Precision: " << avPrec << endl;
 //	cout << "retrieved relevant docs: " << counter << endl;
 //	cout << "total relevant docs: " << num_rels << endl;
-	cout << "\t" << avPrec << endl;
+	cout << avPrec << endl;
 	return avPrec;
 }
 
@@ -106,7 +106,7 @@ Retrieval::Retrieval( string scoring, unsigned heap_size )
 }
 
 void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results  ){
-	cout << "running retrieval" << endl;
+	//cout << "running retrieval" << endl;
 	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
 			docIter != docs.collection_.end(); ++docIter ){
 		double score = 0.0;
@@ -143,7 +143,6 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 	} else {
 		score = eval_.ndcg( retrieved );
 	}
-	cout << "\t" << score << endl;
 	return score;
 }
 
