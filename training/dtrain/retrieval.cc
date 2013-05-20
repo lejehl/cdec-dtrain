@@ -116,11 +116,9 @@ void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHe
 		}
 		// add to heap if score is greate than 0
 		if (score != 0.0){
-		pair<string, double> p = make_pair( docIter->first, score );
-		results.addPair( p );
-
+			pair<string, double> p = make_pair( docIter->first, score );
+			results.addPair( p );
 		}
-
 	}
 }
 
@@ -137,12 +135,11 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 		} catch ( const out_of_range& oor ) {
 			cerr << "This shouldn't happen!" << endl;
 		}
-		cout << retrieved.at(i) << " " ;
 	}
 	if (scoring_ == "map"){
-		vector<unsigned> gold;
-		getSortedRelevances( gold, rels );
-		score =  eval_.averagePrecision(  gold.size(), retrieved );
+//		vector<unsigned> gold;
+//		getSortedRelevances( gold, rels );
+		score =  eval_.averagePrecision(  rels.size(), retrieved );
 	} else {
 		score = eval_.ndcg( retrieved );
 	}
