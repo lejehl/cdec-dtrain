@@ -114,7 +114,7 @@ void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHe
 		for ( set<WordID>::iterator it = query.begin(); it != query.end(); ++it ){
 			score += docIter->second.getScoreForQueryTerm( *it );
 		}
-		// add to heap if score is greate than 0
+		// add to heap if score is greater than 0
 		if (score != 0.0){
 			pair<string, double> p = make_pair( docIter->first, score );
 			results.addPair( p );
