@@ -119,6 +119,7 @@ void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHe
 
 double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& results ){
 	double score = 0.0;
+	results.reverseHeap();
 	vector<unsigned> retrieved( heap_size_ );
 	for ( unsigned i =0; i < retrieved.size(); i++ ){
 		try {
