@@ -133,7 +133,8 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 				retrieved.at(i) =  rels[docid] ;
 			}
 		} catch ( const out_of_range& oor ) {
-			cerr << "This shouldn't happen!" << endl;
+			cerr << "Error in scoring retrieval!" << "\nretrieved.size: "
+					<< heap_size_ << "\nresults.size: " << results.size_ << endl;
 		}
 	}
 	if (scoring_ == "map"){
