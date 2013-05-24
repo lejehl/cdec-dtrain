@@ -49,8 +49,8 @@ while( getline(*input, in) ) {
 	it ++;
 }
 cout << "run retrieval:" << endl;
-Retrieval R( "map", 200);
-MyHeap results(200);
+Retrieval R( "map", 1000);
+MyHeap results(1000);
 string id = "JP-2006003303-A";
 queries.collection_.at( id ).setTerms();
 time_t start, end;
@@ -58,8 +58,8 @@ time(&start);
 R.runRetrieval( queries.collection_.at( id ).terms_, docs, results   );
 time(&end);
 float time_diff = difftime(end, start);
-cout << "time elapsed: " << time_diff << " second";
 
 R.evaluateRetrieval( queries.collection_.at( id ).relevant_docs_, results );
+cout << "time elapsed: " << time_diff << " second" << endl;
 }
 
