@@ -19,5 +19,5 @@ test_retrieval_LDADD   = ../../decoder/libcdec.a ../../klm/search/libksearch.a .
 #test_scorer_SOURCES = test-scorer.cc retrieval.h retrieval.cc document.cc collection.cc myheap.cc
 #test_scorer_LDADD = ../../decoder/libcdec.a ../../klm/search/libksearch.a ../../mteval/libmteval.a ../../utils/libutils.a ../../klm/lm/libklm.a ../../klm/util/libklm_util.a ../../klm/util/double-conversion/libklm_util_double.a
 
-AM_CPPFLAGS = -W -Wall -Wno-sign-compare -I$(top_srcdir)/utils -I$(top_srcdir)/decoder -I$(top_srcdir)/mteval
+AM_CPPFLAGS = -W -Wall -Wno-sign-compare -I$(top_srcdir)/utils -I$(top_srcdir)/decoder -I$(top_srcdir)/mteval -pg
 
