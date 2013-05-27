@@ -17,7 +17,7 @@ MyHeap::MyHeap( unsigned size ): heap_(  )
 {
 	is_full_ = false;
 	size_ = size;
-//	cout << "Made new heap" << ", is full? " << is_full_ << ", size: " << size << endl;
+	cout << "Made new heap" << ", size: " << heap_.size() << endl;
 
 }
 

@@ -62,7 +62,6 @@ void Document::generateBM25Vector( map<WordID, unsigned>& dftable,
 
 double Document::getScoreForQueryTerm( WordID s )
 {
-
 	map<WordID, double>::iterator pos = weighted_vector_.find(s);
 	if ( pos != weighted_vector_.end() ){
 		return pos->second;

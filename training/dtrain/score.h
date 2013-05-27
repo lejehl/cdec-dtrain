@@ -260,6 +260,7 @@ struct MapScorer : public LocalScorer
     		isFirstEpoch_ = false;
     	}
 		iteration_ = 0;
+		cout << "is first epoch? " << isFirstEpoch_ << endl;
 	}
 
 private:

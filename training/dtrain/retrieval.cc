@@ -32,7 +32,7 @@ double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& ret
 			counter++;
 			sum += (double) counter / (double)( i+1 );
 		}
-//		cout << retrieved.at(i) << " ";
+		cout << retrieved.at(i) << " ";
 	}
 	double avPrec;
 	// normalize by total number of RELEVANT docs
@@ -106,7 +106,7 @@ Retrieval::Retrieval( string scoring, unsigned heap_size )
 }
 
 void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results  ){
-	//cout << "running retrieval" << endl;
+	cout << "Terms in query: " << query.size() << endl;
 	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
 			docIter != docs.collection_.end(); ++docIter ){
 		double score = 0.0;
@@ -120,6 +120,8 @@ void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHe
 			results.addPair( p );
 		}
 	}
+	cout <<  results.heap_.size() << " documents returned" << endl;
+
 }
 
 double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& results ){
@@ -127,19 +129,19 @@ double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result
 	results.reverseHeap();
 	vector<unsigned> retrieved( heap_size_ );
 	for ( unsigned i =0; i < retrieved.size(); i++ ){
-		try {
+//		try {
 			string docid = results.heap_.at(i).first;
 			if ( rels.count(docid) == 1 ){
+				cout << "document " << docid << " was found." << endl;
 				retrieved.at(i) =  rels[docid] ;
 			}
-		} catch ( const out_of_range& oor ) {
-			cerr << "Error in scoring retrieval!" << "\nretrieved.size: "
-					<< heap_size_ << "\nresults.size: " << results.size_ << endl;
-		}
+//		} catch ( const out_of_range& oor ) {
+//			cerr << "Heap is smaller than " << "retrieved.size( "
+//					<< heap_size_ << " )" << endl;
+//			break;
+//		}
 	}
 	if (scoring_ == "map"){
-//		vector<unsigned> gold;
-//		getSortedRelevances( gold, rels );
 		score =  eval_.averagePrecision(  rels.size(), retrieved );
 	} else {
 		score = eval_.ndcg( retrieved );
@@ -154,32 +156,4 @@ void Retrieval::getSortedRelevances( vector<unsigned>& gold, map<string, unsigne
 	sort( gold.begin(), gold.end(), std::greater<unsigned>());
 }
 
-/*
- * Average Precision
- */
-//double Retrieval::averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved ){
-//	unsigned counter = 0;
-//	double sum = 0.0;
-//
-//	// precision at i
-//	cout << "relevance (gold)\tsum(precision@rank)" << endl;
-//	for ( unsigned i = 0; i < gold.size(); i++ ){
-//		if ( retrieved.at(i) >= gold.at(i) ){
-//			counter++;
-//			sum += (double) counter / (double)( i+1 );
-//		}
-//		cout << retrieved.at(i) << " (" << gold.at(i) << ") " ;
-//	}
-//	cout << "\t" << sum;
-//	double avPrec;
-//
-//	// normalize by number of RELEVANT docs
-//	avPrec = sum/gold.size();
-////	cout << "\t" << avPrec;
-//	cout << endl;
-//	return avPrec;
-//}
 
-/*
- * normalized discounted cumulative gain
- */
