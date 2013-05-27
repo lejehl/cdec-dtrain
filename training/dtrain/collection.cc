@@ -167,9 +167,9 @@ void QueryCollection::loadQueries()
 			collection_[ qid ] = Query(qid);
 			map<string, Query>::iterator Q = collection_.find(qid);
 //			cout << qid << "\t";
+			cout << "getting rels for query " << qid << endl;
 			while(getline( *rels, rel_record )){
-				cout << "getting rels for query " << qid << endl;
-				cout << "reading record: " << rel_record << endl;
+				cout << " reading record \" " << rel_record << "\"" << endl;
 				vector<string> rel_parts;
 				splitOnTabs( rel_record, rel_parts );
 				string rel_qid = rel_parts[0];
@@ -177,11 +177,11 @@ void QueryCollection::loadQueries()
 				unsigned rel_score;
 				stringstream(rel_parts[3]) >> rel_score ;
 				if ( rel_qid !=  qid ){
-					cout << "Breaking " << endl;
+					cout << "  new qid: breaking " << endl;
 					break;
 				}
 				else {
-					cout << "adding to relevances: <" <<  rel_doc << " , " << rel_score << " >" << endl;
+					cout << " adding to relevances: <" <<  rel_doc << " , " << rel_score << " >" << endl;
 					Q->second.setRelevantDocs( rel_doc, rel_score );
 				}
 			}
