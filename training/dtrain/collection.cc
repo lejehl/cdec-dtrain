@@ -180,20 +180,15 @@ void QueryCollection::loadQueries()
 				else {
 					Q->second.setRelevantDocs( rel_doc, rel_score );
 				}
-
-
 			}
 			cout << Q->second.relevant_docs_.size() << endl;
-//			Q->second.printRelDocs();
+			Q->second.printRelDocs();
 			num_docs_ += 1;
 			prev_qid = qid;
 		}
 		sentence_qid_map_[num_sentences] = qid;
 		num_sentences += 1;
-
-
 	}
-
 //	cout << "Finished Loading!" << endl << "filename: " << infile_ << endl
 //			 << endl << "num docs: " << num_docs_ << endl
 //			<< "collection size: " << collection_.size() << endl;
