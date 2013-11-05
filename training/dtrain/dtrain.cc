@@ -287,35 +287,40 @@ main(int argc, char** argv)
   }
   cerr << "finished setup .. " << endl;
 
-  //  if MAP is used, do one pass over the data and set the viterbi translations in the scorer.
-  if ( scorer_str == "map" ) {
-  	  cerr << "setting viterbi translations" << endl;
+  //  if MAP is used, do one pass over the data and set the viterbi translations in the scorer. why do we need this?
+//  if ( scorer_str == "map" ) {
+//  	  cerr << "setting viterbi translations" << endl;
+//
+//  	  ViterbiGetter* v = new ViterbiGetter();
+//  	  string in;
+//  	  unsigned it = 0;
+//  	  while(getline(*input, in)){
+//  //		  if ( ii+1 % 5 == 0 ){
+//  			  cerr << "." ;
+//  //		  	  }
+//  		  if ( (it+1) % 30 == 0 ){
+//  		  			  cerr << it+1 << endl;
+//  		  		  }
+//  		  decoder.Decode( in, v);
+//  		  score_t s;
+//  		  // use this to set the translation. UGLY!
+//  		  s = scorer->Score( v->transl_, v->transl_, 0, 0 );
+//  		  scorer->increaseIter();
+//  		  src_str_buf.push_back( in );
+//  		  it++;
+//
+//  	  }
+//  	  in_sz = it;
+//  	  scorer->Reset();
+//  	  cerr << endl;
+//  	  cerr << "done" << endl;
+//
+//    }
 
-  	  ViterbiGetter* v = new ViterbiGetter();
-  	  string in;
-  	  unsigned it = 0;
-  	  while(getline(*input, in)){
-  //		  if ( ii+1 % 5 == 0 ){
-  			  cerr << "." ;
-  //		  	  }
-  		  if ( (it+1) % 30 == 0 ){
-  		  			  cerr << it+1 << endl;
-  		  		  }
-  		  decoder.Decode( in, v);
-  		  score_t s;
-  		  // use this to set the translation. UGLY!
-  		  s = scorer->Score( v->transl_, v->transl_, 0, 0 );
-  		  scorer->increaseIter();
-  		  src_str_buf.push_back( in );
-  		  it++;
-
-  	  }
-  	  in_sz = it;
-  	  scorer->Reset();
-  	  cerr << endl;
-  	  cerr << "done" << endl;
-
-    }
+//	if ("scorer_str" == "map" ) {
+		SparseVector<weight_t> diff_vec; // initialize weight vector (for mini-batch update)
+		unsigned batch_size = 0;
+//	}
 
   for (unsigned t = 0; t < T; t++) // T epochs
   {
@@ -332,7 +337,8 @@ main(int argc, char** argv)
 
     string in;
     bool next = false, stop = false; // next iteration or premature stop
-    if ( (t == 0) && (scorer_str != "map") ) {
+//    if ( (t == 0) && (scorer_str != "map") ) {
+        if ( t == 0 ) {
 //    	cerr << "this shoulnd't happen if scoring with map" << endl;
       if(!getline(*input, in)) next = true;
 //      cerr << "no lines in input " << endl;
@@ -372,40 +378,53 @@ main(int argc, char** argv)
     lambdas.init_vector(&dense_weights);
 
     // getting input
-//    cerr << "getting input" << endl;
+    cout << "read references..." << endl;
     vector<WordID> ref_ids; // reference as vector<WordID>
-    if (t == 0) {
+    if (t == 0 ) {
+    	src_str_buf.push_back(in);
+    }
+
+    if (scorer_str != "map" ) {
+    if (t == 0 ) {
       string r_;
       getline(*refs, r_);
       vector<string> ref_tok;
       boost::split(ref_tok, r_, boost::is_any_of(" "));
       register_and_convert(ref_tok, ref_ids);
       ref_ids_buf.push_back(ref_ids);
-      if ( scorer_str != "map" ){
+//      if ( scorer_str != "map" ){
 //    	  cerr << "shouldn't happen with map" << endl;
-      src_str_buf.push_back(in);
-      }
+   //   src_str_buf.push_back(in);
+//      }
     } else {
       ref_ids = ref_ids_buf[ii];
     }
+    }
 //    cerr << "decode" << endl;
     observer->SetRef(ref_ids);
-    if ( (t == 0) && ( scorer_str != "map") ){
+//    if ( (t == 0) && ( scorer_str != "map") ){
+        if ( t == 0 ){
+
 //    	cerr << "shouldn't happen with map" << endl;
+      cout << "decoding...\n";
       decoder.Decode(in, observer);
     }
-    else
+    else {
+    	cout << "decoding...\n";
       decoder.Decode(src_str_buf[ii], observer);
+    }
 
     // get (scored) samples
-//    cerr << "get scored samples" << endl;
+    cout << "get scored samples..." << endl;
     vector<ScoredHyp>* samples = observer->GetSamples();
 
     if (verbose) {
+      if ( scorer_str != "map") {
       cerr << "--- ref for " << ii << ": ";
       if (t > 0) printWordIDVec(ref_ids_buf[ii]);
       else printWordIDVec(ref_ids);
       cerr << endl;
+      }
       for (unsigned u = 0; u < samples->size(); u++) {
         cerr << _p2 << _np << "[" << u << ". '";
         printWordIDVec((*samples)[u].w);
@@ -421,11 +440,28 @@ main(int argc, char** argv)
     f_count += observer->get_f_count();
     list_sz += observer->get_sz();
 
+    // increase iteration here
+    if (scorer_str == "map") {
+    	int max_pos;
+    	score_t curr_max = 0;
+    	// find maximum scoring hypothesis
+    	for ( int i =0; i < (*samples).size(); i++ ) {
+    		if ( (*samples)[i].score > curr_max ) {
+    			max_pos = i;
+    			curr_max = (*samples)[i].score;
+    		}
+    	}
+    	cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
+    	scorer->increaseIter( (*samples)[max_pos].w ); // use translation of best hypothesis in terms of NDCG/MAP
+    }
+
 
     // weight updates
     // if using MAP, don't do an update for first iteration
     if (!noup ) {
+
       // get pairs
+      cout << "get pairs ...\n";
       vector<pair<ScoredHyp,ScoredHyp> > pairs;
       if (pair_sampling == "all")
         all_pairs(samples, pairs, pair_threshold, max_pairs, faster_perceptron);
@@ -435,6 +471,7 @@ main(int argc, char** argv)
         PROsampling(samples, pairs, pair_threshold, max_pairs);
       npairs += pairs.size();
 
+      cout << "do update... \n";
       for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = pairs.begin();
            it != pairs.end(); it++) {
         bool rank_error;
@@ -449,13 +486,37 @@ main(int argc, char** argv)
         }
         if (rank_error) rank_errors++;
         if (scale_bleu_diff) eta = it->first.score - it->second.score;
+        // update if margin < loss_margin
         if (rank_error || margin < loss_margin) {
-          SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
-          lambdas.plus_eq_v_times_s(diff_vec, eta); // add learning rate * gradient
+        	if ( scorer_str != "map" ) {
+        		diff_vec.clear();
+//        		SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
+        	    diff_vec = it->first.f - it->second.f;
+        	    lambdas.plus_eq_v_times_s(diff_vec, eta);  // add learning rate * gradient, update after every sentence
+        	    cout << "weights after update: " << endl;
+        	    for (int i =0; i<lambdas.size(); i++){
+        	    	cout << lambdas[i] << " ";
+        	    }
+        	    cout << endl;
+        	}
+
+        	else {
+        		diff_vec += it->first.f - it->second.f;
+        		batch_size++; // add 1 for each "constraint"
+        	}
           if (gamma)
             lambdas.plus_eq_v_times_s(lambdas, -2*gamma*eta*(1./npairs));
         }
       }
+      // minibatch update: only update if we are at the end of a query
+      if (scorer_str == "map" && scorer->end_of_batch && batch_size > 0 ) {
+			cout << "end of batch: doing update\n";
+    	  lambdas.plus_eq_v_times_s(diff_vec, ( 1/(double) batch_size) * eta); // add learning rate * averaged gradient
+    	  cout << "C=" << batch_size << endl; // TODO: check if batch_size is 0!
+    	  diff_vec.clear();
+    	  batch_size = 0;
+      }
+
 
       // l1 regularization
       // please note that this penalizes _all_ weights
@@ -501,10 +562,7 @@ main(int argc, char** argv)
     if (rescale) lambdas /= lambdas.l2norm();
 
     ++ii;
-    // only for map: increase sentence count
-    if (scorer_str == "map") {
-    	scorer->increaseIter( );
-    }
+    // only for map: increase sentence count + set top 1 hyp as sentence
 
   } // input loop
 
@@ -574,7 +632,7 @@ main(int argc, char** argv)
 
   if (noup) break;
   // only for MAP
-  if ( scorer_str == "map" && t == 0 ) continue;
+//  if ( scorer_str == "map" && t == 0 ) continue;
 
   // write weights to file
   if (select_weights == "best" || keep) {

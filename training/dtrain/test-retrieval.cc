@@ -49,9 +49,10 @@ while( getline(*input, in) ) {
 	it ++;
 }
 cout << "run retrieval:" << endl;
-Retrieval R( "map", 1000);
-MyHeap results(1000);
-string id = "JP-2006003303-A";
+Retrieval R;
+MyHeap results(10);
+string id = "JP-2006000633-A";
+cout << queries.collection_.size() << endl;
 queries.collection_.at( id ).setTerms();
 time_t start, end;
 time(&start);

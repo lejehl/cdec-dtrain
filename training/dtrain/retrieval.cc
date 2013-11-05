@@ -20,6 +20,7 @@ using namespace std;
  * average Precision, according to LETOR paper
  * Liu et al. (SIGIR'07): LETOR: Benchmark Dataset for Research on
  * Learning to Rank for Information Retrieval
+ * This does not distinguish between relevance levels
  */
 double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& retrieved ){
 	unsigned counter = 0;
@@ -46,30 +47,62 @@ double RetrievalEval::averagePrecision( unsigned num_rels, vector<unsigned>& ret
 }
 
 /*
- * implementation after Wikipedia  - TODO: this needs to be fixed
+ * implementation after irbook
  */
-double RetrievalEval::ndcg( vector<unsigned>& retrieved ){
-	cout << "Scoring: ndcg" << endl;
-	double dcg = (double) retrieved[0];
-	vector<double> normalizers;
-	normalizers.push_back( 1.0 );
-	for (unsigned i=2; i <= retrieved.size(); i++){
-		// log(base 2) of rank
-		double normalizer = log ( i ) / log ( 2 );
-		dcg += (double) retrieved[i-1] / normalizer;
-		cout << "dcg@" << i << ": " << retrieved[i-1] / normalizer << endl;
-		// remember normalizer for dcg
-		normalizers.push_back( normalizer );
+double RetrievalEval::ndcg( vector<unsigned>& retrieved, vector<unsigned>& gold ){
+
+
+	// calculate normalizing factor, so that perfect ranking gets score of 1
+	// 1/(sum_j=1_num-rel (2^Rel(j) - 1) / log_2 (j+1 ) )
+
+	double Z;
+	double Z_den = 0.0;
+	// go over relevant docs, since quotient is 0 if relevance is 0
+//	assert( gold.size() <= retrieved.size() );
+	unsigned s;
+	if (gold.size() > retrieved.size() )
+		s = retrieved.size();
+	else s = gold.size();
+	for (unsigned i = 0; i< s; i++ ) {
+		Z_den += ( pow( 2.0, (double) gold[i] ) - 1  ) / log2 (i+2); // +2 because i starts from 0
+//		cout << "Z_den: " << Z_den << " ";
 	}
-	cout << "total dcg: " << dcg << endl;
-	sort ( retrieved.begin(), retrieved.end(), std::greater<unsigned>());
-	double idcg = 0.0;
-	for (unsigned i=1; i <= retrieved.size(); i++){
-		idcg += (double) retrieved[i-1] / normalizers[i-1];
+	Z = 1/Z_den;
+//	cout << " Z: " << Z << endl;
+
+    //calculate dcg for retrieved docs
+	//sum_j=1_num-retrieved (2^Rel(j) - 1) / log_2 (j+1 )
+	double dcg = 0.0;
+	for (unsigned i = 0; i< retrieved.size(); i++ ) {
+		if ( retrieved[i] > 0 )
+		dcg += ( pow( 2.0, (double) retrieved[i] ) - 1  ) / log2 (i+2); // +2 because i starts from 0
+//		cout << "dcg: " << dcg << " ";
+		cout << retrieved.at(i) << " ";
 	}
-	cout << "total idcg: " << idcg << endl;
-	cout << "ndcg: " << dcg/idcg << endl;
-	return dcg/idcg;
+	cout << "\nndcg: " << Z*dcg << endl;
+	return Z*dcg;
+
+//	cout << "Scoring: ndcg" << endl;
+//	double dcg = (double) retrieved[0];
+//	vector<double> normalizers;
+//	normalizers.push_back( 1.0 );
+//	for (unsigned i=2; i <= retrieved.size(); i++){
+//		// log(base 2) of rank
+//		double normalizer = log ( i ) / log ( 2 );
+//		dcg += (double) retrieved[i-1] / normalizer;
+//		cout << "dcg@" << i << ": " << retrieved[i-1] / normalizer << endl;
+//		// remember normalizer for dcg
+//		normalizers.push_back( normalizer );
+//	}
+//	cout << "total dcg: " << dcg << endl;
+//	sort ( retrieved.begin(), retrieved.end(), std::greater<unsigned>());
+//	double idcg = 0.0;
+//	for (unsigned i=1; i <= retrieved.size(); i++){
+//		idcg += (double) retrieved[i-1] / normalizers[i-1];
+//	}
+//	cout << "total idcg: " << idcg << endl;
+//	cout << "ndcg: " << dcg/idcg << endl;
+//	return dcg/idcg;
 }
 
 
@@ -120,31 +153,37 @@ void Retrieval::runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHe
 			results.addPair( p );
 		}
 	}
+//	results.printHeap();
 	cout <<  results.heap_.size() << " documents returned" << endl;
 
 }
 
 double Retrieval::evaluateRetrieval( map<string, unsigned>& rels, MyHeap& results ){
 	double score = 0.0;
-	results.reverseHeap();
+	if ( results.heap_.size() == 0 ) return score;
+	std::vector< std::pair<string, double>  > r_heap;
+    results.reverseHeap( r_heap );
+
 	vector<unsigned> retrieved( heap_size_ );
 	for ( unsigned i =0; i < retrieved.size(); i++ ){
-//		try {
-			string docid = results.heap_.at(i).first;
+		try {
+			string docid = r_heap.at(i).first;
 			if ( rels.count(docid) == 1 ){
-				cout << "document " << docid << " was found." << endl;
+//				cout << "document " << docid << " was found." << endl;
 				retrieved.at(i) =  rels[docid] ;
 			}
-//		} catch ( const out_of_range& oor ) {
+		} catch ( const out_of_range& oor ) {
 //			cerr << "Heap is smaller than " << "retrieved.size( "
 //					<< heap_size_ << " )" << endl;
-//			break;
-//		}
+			break;
+		}
 	}
 	if (scoring_ == "map"){
-		score =  eval_.averagePrecision(  rels.size(), retrieved );
-	} else {
-		score = eval_.ndcg( retrieved );
+//		score =  eval_.averagePrecision(  rels.size(), retrieved );
+//	} else {
+		vector<unsigned> gold;
+		getSortedRelevances( gold, rels );
+		score = eval_.ndcg( retrieved, gold );
 	}
 	return score;
 }

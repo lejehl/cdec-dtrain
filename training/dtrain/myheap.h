@@ -12,12 +12,13 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <queue>
 
 using namespace std;
 
 struct sort_by_second {
     bool operator()(const pair< string, double > &left, const pair< string, double > &right) {
-        return left.second < right.second;
+        return left.second > right.second;
     }
 };
 
@@ -26,6 +27,8 @@ struct MyHeap
 public:
 	MyHeap( unsigned );
 	vector< pair<string, double> > heap_;
+//	priority_queue< pair<string, double>, std::vector<pair<string, double> >, sort_by_second > heap_;
+
 	unsigned size_;
 	// add key value pair
 	void addPair( pair<string, double>& );
@@ -36,11 +39,11 @@ public:
 		// 3.Check if heap is full.
 		// 4. Sort heap
 	void printHeap();
-	void reverseHeap();
+	void reverseHeap( std::vector< std::pair<string, double> >& );
 private:
 	bool is_full_;
 	// sort vector by value
-	void sortByVal( );
+//	void sortByVal( );
 	void checkIfFull();
 
 

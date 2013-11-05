@@ -60,12 +60,13 @@ struct LocalScorer
 {
   unsigned N_;
   vector<score_t> w_;
+  bool end_of_batch = false; // only needed for MapScorer
 
   virtual score_t
   Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len)=0;
 
   virtual void Reset() {} // only for ApproxBleuScorer, LinearBleuScorer
-  virtual void increaseIter(){}
+  virtual void increaseIter( vector<WordID>& hyp ){}
 
   inline void
   Init(unsigned N, vector<score_t> weights)

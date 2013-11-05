@@ -23,7 +23,7 @@ struct RetrievalEval {
 //	double avPrecAtN( vector<unsigned>& gold, vector<unsigned>& retrieved, unsigned n = 0 );
 //private:
 	double averagePrecision( unsigned num_rels, vector<unsigned>& retrieved  );
-	double ndcg( vector<unsigned>& retrieved );
+	double ndcg( vector<unsigned>& retrieved, vector<unsigned>&gold );
 
 };
 

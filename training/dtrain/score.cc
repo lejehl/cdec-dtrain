@@ -300,12 +300,12 @@ MapScorer::MapScorer( string query_file, string doc_file, string relevance_file,
 score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 		const unsigned rank, const unsigned /*src_len*/ )
 {
-	if ( isFirstEpoch_ == true ) {
-		if ( rank == 0 ) {
-			queries_.setSentence( iteration_, hyp );
-		}
-		return 0.0;
-	} else {
+//	if ( isFirstEpoch_ == true ) {
+//		if ( rank == 0 ) {
+//			queries_.setSentence( iteration_, hyp );
+//		}
+//		return 0.0;
+//	} else {
 	//	get query location
 	map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
 	if ( rank == 0 ) {
@@ -317,6 +317,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 	qIter->second.printRelDocs();
 	}
 	// set hypothesis terms
+	qIter->second.clear();
 	qIter->second.setTerms(iteration_, hyp );
 	// initialise heap
 	MyHeap results( heap_size_ );
@@ -352,7 +353,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 //	}
 //	double score =  eval_.avPrecAtN( rels, retrieved, heap_size_  );
 	return (score_t) score;
-	}
+//	}
 }
 
 //void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results )

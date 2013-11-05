@@ -44,14 +44,15 @@ struct Query : public TextItem
 public:
 	Query( const string& docid = ""  );
 	map<string,unsigned> relevant_docs_;
-	map<unsigned, vector<WordID> > sentences_;
-	set<WordID> terms_;
+	map<unsigned, vector<WordID> > sentences_; // query word tokens
+	set<WordID> terms_; // query word types
 	void setRelevantDocs( string& docid, unsigned relscore );
 	void setTerms( unsigned sent_id, vector<WordID>& text  );
 	void setTerms();
 	void setSentence( unsigned sent_id, vector<WordID>& text  );
 	void printRelDocs( );
 	vector<unsigned> getSortedRelevances();
+	void clear();
 };
 
 

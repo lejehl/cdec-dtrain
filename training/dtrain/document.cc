@@ -136,5 +136,9 @@ vector<unsigned> Query::getSortedRelevances( ){
 	return rels;
 }
 
+void Query::clear(){
+//	sentences_.clear();
+	terms_.clear();
+}
 
 

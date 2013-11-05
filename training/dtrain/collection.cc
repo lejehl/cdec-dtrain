@@ -79,6 +79,7 @@ void DocumentCollection::loadDocs(  )
 	// make sure num_docs_ is 0
 	num_docs_ = 0;
 	while (getline( *input, in)) {
+//		cout << num_docs_+1 << " ";
 		vector<string> parts;
 		splitOnTabs( in, parts );
 		string docid = parts[0];
@@ -98,6 +99,7 @@ void DocumentCollection::loadDocs(  )
 		// increase num_docs
 		num_docs_ += 1;
 		}
+	cout << "\nhave " << num_docs_<< " documents." << endl;
 
 	averageDocLength();
 
@@ -158,6 +160,7 @@ void QueryCollection::loadQueries()
 	string qid = "";
 	unsigned num_sentences = 0;
 
+	// load queries
 	while (getline( *input, in )) {
 		vector<string> parts;
 		splitOnTabs( in, parts );
@@ -165,28 +168,6 @@ void QueryCollection::loadQueries()
 		if ( qid != prev_qid ) {
 			// create new query in collection
 			collection_[ qid ] = Query(qid);
-			map<string, Query>::iterator Q = collection_.find(qid);
-//			cout << qid << "\t";
-			cout << "getting rels for query " << qid << endl;
-			while(getline( *rels, rel_record )){
-				cout << " reading record \" " << rel_record << "\"" << endl;
-				vector<string> rel_parts;
-				splitOnTabs( rel_record, rel_parts );
-				string rel_qid = rel_parts[0];
-				string rel_doc = rel_parts[2];
-				unsigned rel_score;
-				stringstream(rel_parts[3]) >> rel_score ;
-				if ( rel_qid !=  qid ){
-					cout << "  new qid: breaking " << endl;
-					break;
-				}
-				else {
-					cout << " adding to relevances: <" <<  rel_doc << " , " << rel_score << " >" << endl;
-					Q->second.setRelevantDocs( rel_doc, rel_score );
-				}
-			}
-			cout << Q->second.relevant_docs_.size() << endl;
-			Q->second.printRelDocs();
 			num_docs_ += 1;
 			prev_qid = qid;
 		}
@@ -197,6 +178,29 @@ void QueryCollection::loadQueries()
 //			 << endl << "num docs: " << num_docs_ << endl
 //			<< "collection size: " << collection_.size() << endl;
 
+    // load relevances
+	prev_qid.clear();
+	qid.clear();
+	map<string, Query>::iterator Q;
+	while(getline( *rels, rel_record )){
+//		cout << " reading record \" " << rel_record << "\"" << endl;
+		vector<string> rel_parts;
+		splitOnTabs( rel_record, rel_parts );
+		qid = rel_parts[0];
+		string rel_doc = rel_parts[2];
+		unsigned rel_score;
+		stringstream(rel_parts[3]) >> rel_score ;
+		if ( prev_qid !=  qid ){
+//			if (! prev_qid.empty() )
+//				Q->second.printRelDocs();
+			Q = collection_.find(qid);
+			prev_qid = qid;
+//			cout << "  new qid: " << qid << endl;
+		}
+//		cout << " adding to relevances: <" <<  rel_doc << " , " << rel_score << " >" << endl;
+		Q->second.setRelevantDocs( rel_doc, rel_score );
+	}
+//	Q->second.printRelDocs();
 }
 
 
@@ -214,7 +218,7 @@ void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok )
 map<string, Query >::iterator QueryCollection::getQuery( unsigned sent_id )
 {
 //	cout << "Finding query for sentence " << sent_id << endl;
-	string qid = sentence_qid_map_[ sent_id ];
+	string qid = sentence_qid_map_.at( sent_id);
 //	cout << "Found query ID: " << qid << endl;
 	return collection_.find( qid );
 
