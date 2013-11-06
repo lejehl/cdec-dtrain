@@ -66,7 +66,7 @@ struct LocalScorer
   Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len)=0;
 
   virtual void Reset() {} // only for ApproxBleuScorer, LinearBleuScorer
-  virtual void increaseIter( vector<WordID>& hyp ){}
+  virtual void increaseIter( ){}
   virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){}
   inline void
   Init(unsigned N, vector<score_t> weights)
