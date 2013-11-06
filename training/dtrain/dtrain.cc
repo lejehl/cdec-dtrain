@@ -317,10 +317,11 @@ main(int argc, char** argv)
 //
 //    }
 
-//	if ("scorer_str" == "map" ) {
-		SparseVector<weight_t> diff_vec; // initialize weight vector (for mini-batch update)
-		unsigned batch_size = 0;
-//	}
+  //	if ("scorer_str" == "map" ) {
+  SparseVector<weight_t> diff_vec; // initialize weight vector (for mini-batch update)
+  unsigned batch_size = 0;
+  vector< vector<WordID> > top_hyps;
+  //	}
 
   for (unsigned t = 0; t < T; t++) // T epochs
   {
@@ -331,7 +332,6 @@ main(int argc, char** argv)
   score_t model_sum(0);
   unsigned ii = 0, rank_errors = 0, margin_violations = 0, npairs = 0, f_count = 0, list_sz = 0;
   if (!quiet) cerr << "Iteration #" << t+1 << " of " << T << "." << endl;
-
   while(true)
   {
 
@@ -452,13 +452,17 @@ main(int argc, char** argv)
     		}
     	}
     	cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
-    	scorer->increaseIter( (*samples)[max_pos].w ); // use translation of best hypothesis in terms of NDCG/MAP
+    	scorer->increaseIter( ); // use translation of best hypothesis in terms of NDCG/MAP
+    	top_hyps.push_back( (*samples)[max_pos].w );
+    	if (t == 0 ) {
+    		scorer->updateSentences(top_hyps); // always update if t is 0 (otherwise no context will be used)
+    	}
     }
 
 
     // weight updates
     // if using MAP, don't do an update for first iteration
-    if (!noup ) {
+    if (!noup || ! ( scorer_str == "map" && t == 0) ) {
 
       // get pairs
       cout << "get pairs ...\n";
@@ -493,11 +497,11 @@ main(int argc, char** argv)
 //        		SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
         	    diff_vec = it->first.f - it->second.f;
         	    lambdas.plus_eq_v_times_s(diff_vec, eta);  // add learning rate * gradient, update after every sentence
-        	    cout << "weights after update: " << endl;
-        	    for (int i =0; i<lambdas.size(); i++){
-        	    	cout << lambdas[i] << " ";
-        	    }
-        	    cout << endl;
+//        	    cout << "weights after update: " << endl;
+//        	    for (int i =0; i<lambdas.size(); i++){
+//        	    	cout << lambdas[i] << " ";
+//        	    }
+//        	    cout << endl;
         	}
 
         	else {
@@ -510,11 +514,14 @@ main(int argc, char** argv)
       }
       // minibatch update: only update if we are at the end of a query
       if (scorer_str == "map" && scorer->end_of_batch && batch_size > 0 ) {
+//            if (scorer_str == "map" && t>0 && ii==in_sz && batch_size > 0 ) {
 			cout << "end of batch: doing update\n";
     	  lambdas.plus_eq_v_times_s(diff_vec, ( 1/(double) batch_size) * eta); // add learning rate * averaged gradient
     	  cout << "C=" << batch_size << endl; // TODO: check if batch_size is 0!
+    	  scorer->updateSentences( top_hyps );
     	  diff_vec.clear();
     	  batch_size = 0;
+    	  top_hyps.clear();
       }
 
 

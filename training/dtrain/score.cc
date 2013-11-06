@@ -288,6 +288,7 @@ MapScorer::MapScorer( string query_file, string doc_file, string relevance_file,
 	iteration_ = 0;
 	isFirstEpoch_ = true;
 	heap_size_= heap_size;
+	batch_size_ = 0;
 
 }
 
@@ -318,7 +319,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 	}
 	// set hypothesis terms
 	qIter->second.clear();
-	qIter->second.setTerms(iteration_, hyp );
+	qIter->second.setTerms(batch_size_, hyp );
 	// initialise heap
 	MyHeap results( heap_size_ );
 	// run retrieval

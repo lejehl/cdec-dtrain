@@ -96,14 +96,27 @@ void Query::setSentence( unsigned sent_id, vector<WordID>& text )
 	sentences_[sent_id] = text;
 }
 
-
-void Query::setTerms( unsigned sentId, vector<WordID>& text ){
-	setSentence( sentId, text );
+/*
+ * @brief change the query terms using the sentence text in position sentence_in_query, instead of the sentence stored in the query
+ * @params: position of sentence in query, current hypothesis
+ */
+void Query::setTerms( unsigned sentence_in_query, vector<WordID>& curr_hyp ){
+//	setSentence( sentId, text ); // DON'T CHANGE THE SENTENCES!
+	unsigned count = 0;
 	for (map<unsigned, vector<WordID> >::iterator it=sentences_.begin();
 			it != sentences_.end(); ++it  ){
-		for ( unsigned i=0; i < it->second.size(); i++ ){
-			terms_.insert( it->second.at(i) );
+		// if we are at another position, insert those terms
+		if ( count != sentence_in_query ) {
+			for ( unsigned i=0; i < it->second.size(); i++ ){
+				terms_.insert( it->second.at(i) );
+			}
+			// else insert the terms in the current hypothesis
+		} else {
+			for ( unsigned i=0; i < curr_hyp.size(); i++ ){
+				terms_.insert( curr_hyp.at(i) );
+			}
 		}
+		count ++;
 	}
 }
 

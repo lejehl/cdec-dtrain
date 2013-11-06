@@ -67,7 +67,7 @@ struct LocalScorer
 
   virtual void Reset() {} // only for ApproxBleuScorer, LinearBleuScorer
   virtual void increaseIter( vector<WordID>& hyp ){}
-
+  virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){}
   inline void
   Init(unsigned N, vector<score_t> weights)
   {

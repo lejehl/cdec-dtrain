@@ -99,7 +99,7 @@ void MyHeap::reverseHeap( std::vector< std::pair<string, double> >& rev_heap )
 //	printHeap();
 	sort_heap(heap_.begin(), heap_.end(), sort_by_second() );
 	cout << "after sorting: " << endl ;
-	printHeap();
+//	printHeap();
 	for ( unsigned i=0; i< heap_.size(); i++ ) {
 		rev_heap.push_back( heap_[i]);
 	}
