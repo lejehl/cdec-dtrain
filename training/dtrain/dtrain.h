@@ -60,8 +60,7 @@ struct LocalScorer
 {
   unsigned N_;
   vector<score_t> w_;
-  bool end_of_batch = false; // only needed for MapScorer
-
+  bool end_of_batch;
   virtual score_t
   Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len)=0;
 

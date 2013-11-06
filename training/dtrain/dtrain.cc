@@ -323,6 +323,7 @@ main(int argc, char** argv)
   vector< vector<WordID> > top_hyps;
   //	}
 
+  // begin outer loop
   for (unsigned t = 0; t < T; t++) // T epochs
   {
 
@@ -332,6 +333,8 @@ main(int argc, char** argv)
   score_t model_sum(0);
   unsigned ii = 0, rank_errors = 0, margin_violations = 0, npairs = 0, f_count = 0, list_sz = 0;
   if (!quiet) cerr << "Iteration #" << t+1 << " of " << T << "." << endl;
+
+  // begin inner loop
   while(true)
   {
 
@@ -442,6 +445,11 @@ main(int argc, char** argv)
 
     // increase iteration here
     if (scorer_str == "map") {
+    	if (t == 0 ) {
+    		top_hyps.push_back((*samples)[0].w);
+    		scorer->updateSentences(top_hyps); // use Viterbi translation if t is 0
+    	} else {
+
     	int max_pos;
     	score_t curr_max = 0;
     	// find maximum scoring hypothesis
@@ -454,15 +462,13 @@ main(int argc, char** argv)
     	cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
     	scorer->increaseIter( ); // use translation of best hypothesis in terms of NDCG/MAP
     	top_hyps.push_back( (*samples)[max_pos].w );
-    	if (t == 0 ) {
-    		scorer->updateSentences(top_hyps); // always update if t is 0 (otherwise no context will be used)
     	}
     }
 
 
     // weight updates
     // if using MAP, don't do an update for first iteration
-    if (!noup || ! ( scorer_str == "map" && t == 0) ) {
+    if (!noup && !( scorer_str == "map" && t == 0) ) {
 
       // get pairs
       cout << "get pairs ...\n";
@@ -564,6 +570,8 @@ main(int argc, char** argv)
         }
       }
 
+    } else {
+    	cout << "no update.\n";
     }
 
     if (rescale) lambdas /= lambdas.l2norm();
