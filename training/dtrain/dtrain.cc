@@ -460,9 +460,9 @@ main(int argc, char** argv)
     		}
     	}
     	cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
-    	scorer->increaseIter( ); // use translation of best hypothesis in terms of NDCG/MAP
     	top_hyps.push_back( (*samples)[max_pos].w );
     	}
+    	scorer->increaseIter( );
     }
 
 
