@@ -23,43 +23,45 @@ using namespace std;
 struct Collection
 {
 public:
-	Collection( const string& filename );
+  Collection( const string& filename );
 
-	string infile_;
-	unsigned num_docs_;//collection size
-	unsigned getNumDocs();
-	void splitOnTabs( string&, vector<string>& );
-	void tokenize( string&, vector<string>& );
+  string infile_;
+  unsigned num_docs_;//collection size
+  unsigned getNumDocs();
+  void splitOnTabs( string&, vector<string>& );
+  void tokenize( string&, vector<string>& );
 //	void printVector( vector<string> & );
 };
 
 struct DocumentCollection : public Collection
 {
 public:
-	DocumentCollection( string& filename );
-	map<string, Document > collection_;
-	map<WordID, unsigned> dftable_;
-	double avg_len_;
-	void loadDocs( );
-	void generateDfTable(  );
-	void averageDocLength();
-	double getAvgLen();
+  DocumentCollection( string& filename );
+  map<string, Document > collection_;
+  map<WordID, unsigned> dftable_;
+  double avg_len_;
+  void loadDocs( );
+  void generateDfTable(  );
+  void averageDocLength();
+  double getAvgLen();
 };
 
 struct QueryCollection : public Collection
 {
 
 public:
-	QueryCollection( string& filename, string& relevance_file );
-	map<string, Query > collection_;
-	map<unsigned,string> sentence_qid_map_;
-	string relfile_;
+  QueryCollection( string& filename, string& relevance_file, string& sw_file );
+  map<string, Query > collection_;
+  map<unsigned,string> sentence_qid_map_;
+  string relfile_;
+  set<WordID> stopwords_;
 
-	void loadQueries( );
+  void loadQueries( );
+  void loadStopwords( string& );
 //	void printQueryCollection();
-	void setSentence( unsigned, vector<WordID> & );
+  void setSentence( unsigned, vector<WordID> & );
 //	void setSentence( unsigned, string & );
-	map<string, Query >::iterator getQuery( unsigned /*sent_id*/ );
+  map<string, Query >::iterator getQuery( unsigned /*sent_id*/ );
 };
 
 

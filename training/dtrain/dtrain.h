@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <climits>
 #include <string.h>
+#include <algorithm>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
@@ -62,7 +63,7 @@ struct LocalScorer
   vector<score_t> w_;
   bool end_of_batch;
   virtual score_t
-  Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len)=0;
+  Score(const vector<WordID>& hyp,const vector<WordID>& ref, const unsigned rank, const unsigned src_len)=0;
 
   virtual void Reset() {} // only for ApproxBleuScorer, LinearBleuScorer
   virtual void increaseIter( ){}
@@ -122,6 +123,9 @@ inline void printWordIDVec(vector<WordID>& v)
     if (i < v.size()-1) cerr << " ";
   }
 }
+
+
+
 
 template<typename T>
 inline T sign(T z)

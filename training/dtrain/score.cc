@@ -33,7 +33,7 @@ BleuScorer::Bleu(NgramCounts& counts, const unsigned hyp_len, const unsigned ref
 }
 
 score_t
-BleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+BleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                   const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -53,7 +53,7 @@ BleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  * NOTE: 0 iff no 1gram match ('grounded')
  */
 score_t
-StupidBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+StupidBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -82,7 +82,7 @@ StupidBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  * (Nakov et al. '12)
  */
 score_t
-FixedStupidBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+FixedStupidBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -113,7 +113,7 @@ FixedStupidBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  * NOTE: max is 0.9375 (with N=4)
  */
 score_t
-SmoothBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+SmoothBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -144,7 +144,7 @@ SmoothBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  * sum up Ngram precisions
  */
 score_t
-SumBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+SumBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -168,7 +168,7 @@ SumBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  * sum up exp(Ngram precisions)
  */
 score_t
-SumExpBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+SumExpBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -192,7 +192,7 @@ SumExpBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  * sum up exp(weight * log(Ngram precisions))
  */
 score_t
-SumWhateverBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+SumWhateverBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned /*rank*/, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -225,7 +225,7 @@ SumWhateverBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  *       No scaling by src len.
  */
 score_t
-ApproxBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+ApproxBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned rank, const unsigned src_len)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -256,7 +256,7 @@ ApproxBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
  *
  */
 score_t
-LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
+LinearBleuScorer::Score(const vector<WordID>& hyp, const vector<WordID>& ref,
                         const unsigned rank, const unsigned /*src_len*/)
 {
   unsigned hyp_len = hyp.size(), ref_len = ref.size();
@@ -280,15 +280,15 @@ LinearBleuScorer::Score(vector<WordID>& hyp, vector<WordID>& ref,
 }
 
 
-MapScorer::MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size, string scoring )
-: docs_( doc_file ), queries_( query_file, relevance_file ), retrieval_( scoring, heap_size )
+MapScorer::MapScorer( string& query_file, string& doc_file, string& relevance_file, string& sw_file, unsigned heap_size, string scoring  )
+: docs_( doc_file ), queries_( query_file, relevance_file, sw_file ), retrieval_( scoring, heap_size )
 {
-	cout << "Created new MapScorer. " << endl
-			<< "scoring: " << scoring << " heap size: " << heap_size << endl;
-	iteration_ = 0;
-	isFirstEpoch_ = true;
-	heap_size_= heap_size;
-	batch_size_ = 0;
+  cout << "Created new MapScorer. " << endl
+      << "scoring: " << scoring << " heap size: " << heap_size << endl;
+  iteration_ = 0;
+  isFirstEpoch_ = true;
+  heap_size_= heap_size;
+  batch_size_ = 0;
 
 }
 
@@ -298,8 +298,8 @@ MapScorer::MapScorer( string query_file, string doc_file, string relevance_file,
  * uses Average Precision of a query containing the current translation
  * to optimise translations for retrieval
  */
-score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
-		const unsigned rank, const unsigned /*src_len*/ )
+score_t MapScorer::Score( const vector<WordID>& hyp, const vector<WordID>& ref,
+    const unsigned rank, const unsigned /*src_len*/ )
 {
 //	if ( isFirstEpoch_ == true ) {
 //		if ( rank == 0 ) {
@@ -307,25 +307,26 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 //		}
 //		return 0.0;
 //	} else {
-	//	get query location
-	map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
-	if ( rank == 0 ) {
-		if (iteration_ == 0 ){
-			cout << "\n\nNEW EPOCH:" << endl;
-		}
-	cout << "\n==============================="<< endl << "Sentence "<< iteration_ <<
-			" qid: " << qIter->second.doc_id_ << endl;
-	qIter->second.printRelDocs();
-	}
-	// set hypothesis terms
-	qIter->second.clear();
-	qIter->second.setTerms(batch_size_, hyp );
-	// initialise heap
-	MyHeap results( heap_size_ );
-	// run retrieval
+  //	get query location
+  map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
+  if ( rank == 0 ) {
+    if (iteration_ == 0 ){
+      cout << "\n\nNEW EPOCH:" << endl;
+    }
+  cout << "\n==============================="<< endl << "Sentence "<< iteration_ <<
+      " qid: " << qIter->second.doc_id_ << endl;
+  qIter->second.printRelDocs();
+  }
+  // generate query
+  qIter->second.clear();
+  set<WordID> query;
+  qIter->second.setTerms( batch_size_, hyp, queries_.stopwords_, query );
+  // initialise heap
+  MyHeap results( heap_size_ );
+  // run retrieval
 //	retrieval( docs_, qIter->second.terms_, results );
-	retrieval_.runRetrieval( qIter->second.terms_, docs_, results );
-	double score = retrieval_.evaluateRetrieval( qIter->second.relevant_docs_ , results );
+  retrieval_.runRetrieval( query, docs_, results );
+  double score = retrieval_.evaluateRetrieval( qIter->second.relevant_docs_ , results );
 //	Query& query = qIter->second;
 //	vector<unsigned> retrieved( heap_size_ );
 //	vector<unsigned> rels = query.getSortedRelevances();
@@ -338,7 +339,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 //	}
 //	cout << endl;
 
-	// get relevance levels for retrieved docs
+  // get relevance levels for retrieved docs
 //	if ( rank == 0){
 //	cout << "k-best-results: " << endl;
 //	}
@@ -353,7 +354,7 @@ score_t MapScorer::Score( vector<WordID>& hyp, vector<WordID>& ref,
 //		}
 //	}
 //	double score =  eval_.avPrecAtN( rels, retrieved, heap_size_  );
-	return (score_t) score;
+  return (score_t) score;
 //	}
 }
 

@@ -147,7 +147,7 @@ make_ngram_counts(const vector<WordID>& hyp, const vector<WordID>& ref, const un
 struct BleuScorer : public LocalScorer
 {
   score_t Bleu(NgramCounts& counts, const unsigned hyp_len, const unsigned ref_len);
-  score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
   void increaseIter( ) {}
   virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){}
@@ -156,7 +156,7 @@ struct BleuScorer : public LocalScorer
 
 struct StupidBleuScorer : public LocalScorer
 {
-  score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
 
   void increaseIter( ) {}
@@ -166,7 +166,7 @@ struct StupidBleuScorer : public LocalScorer
 
 struct FixedStupidBleuScorer : public LocalScorer
 {
-  score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
 
   void increaseIter( ) {}
@@ -176,7 +176,7 @@ struct FixedStupidBleuScorer : public LocalScorer
 
 struct SmoothBleuScorer : public LocalScorer
 {
-  score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
   void Reset() {}
 
   void increaseIter( ) {}
@@ -187,7 +187,7 @@ struct SmoothBleuScorer : public LocalScorer
 struct SumBleuScorer : public LocalScorer
 {
 
-   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+   score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
    void Reset() {}
    void increaseIter( ) {}
    virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){}
@@ -197,7 +197,7 @@ struct SumBleuScorer : public LocalScorer
 struct SumExpBleuScorer : public LocalScorer
 {
 
-   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+   score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
    void Reset() {}
    void increaseIter( ) {}
 
@@ -206,7 +206,7 @@ struct SumExpBleuScorer : public LocalScorer
 struct SumWhateverBleuScorer : public LocalScorer
 {
 
-   score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
+   score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned /*rank*/, const unsigned /*src_len*/);
    void Reset() {}
    void increaseIter( ) {}
    virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){}
@@ -229,7 +229,7 @@ struct ApproxBleuScorer : public BleuScorer
     glob_hyp_len_ = glob_ref_len_ = glob_src_len_ = 0.;
   }
 
-  score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned src_len);
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned rank, const unsigned src_len);
 
   void increaseIter( ) {}
   virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){}
@@ -245,7 +245,7 @@ struct LinearBleuScorer : public BleuScorer
     onebest_counts_.One();
   }
 
-  score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
 
   inline void Reset() {
     onebest_len_ = 1;
@@ -257,50 +257,60 @@ struct LinearBleuScorer : public BleuScorer
 
 struct MapScorer : public LocalScorer
 {
-	MapScorer( string query_file, string doc_file, string relevance_file, unsigned heap_size = 10, string scoring = "map");
-	score_t Score(vector<WordID>& hyp, vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
+  MapScorer( string& query_file, string& doc_file, string& relevance_file, string& sw_file, unsigned heap_size = 10, string scoring = "map" );
+  score_t Score(const vector<WordID>& hyp, const vector<WordID>& ref, const unsigned rank, const unsigned /*src_len*/);
     inline void increaseIter( ){
 //    	queries_.setSentence(iteration_, hyp); // set top 1 hyp as sentence
-    	map<string, Query >::iterator prev_it = queries_.getQuery(iteration_);
+      map<string, Query >::iterator prev_it = queries_.getQuery(iteration_);
 //    	cout << "current qid:" << prev_it->second.doc_id_ << endl;
-    	iteration_ ++;
-    	batch_size_ ++;
-    	map<string, Query >::iterator curr_it;
-    	try {
-    		curr_it = queries_.getQuery(iteration_);
-    	} catch (out_of_range& ) {
-    		// handle last line in file
-    		end_of_batch=true;
-    		batch_size_ = 0;
-    		return;
-    	}
+      iteration_ ++;
+      batch_size_ ++;
+      map<string, Query >::iterator curr_it;
+      try {
+        curr_it = queries_.getQuery(iteration_);
+      } catch (out_of_range& ) {
+        // handle last line in file
+        end_of_batch=true;
+        batch_size_ = 0;
+        return;
+      }
 //    	cout << "current qid:" << curr_it->second.doc_id_ << endl;
-    	if ( prev_it->second.doc_id_ != curr_it->second.doc_id_ ) end_of_batch=true;
-    	else end_of_batch=false;
-    	cout << "end of batch? " << end_of_batch << endl;
+      if ( prev_it->second.doc_id_ != curr_it->second.doc_id_ ) {
+        end_of_batch=true;
+        batch_size_ = 0;
+
+      }
+      else end_of_batch=false;
     }
-    virtual void updateSentences( vector< vector<WordID> >& vec_of_hyps ){
-    	for (unsigned i=0; i<vec_of_hyps.size(); i++ ){
-    		queries_.setSentence(i, vec_of_hyps[i]);
-    	}
+
+    inline void updateSentences( vector< vector<WordID> >& vec_of_hyps ){
+      cerr << "Updating sentences: Iteration=" << iteration_ << ", #Hyps=" << vec_of_hyps.size() << endl;
+      for (unsigned i=0; i<vec_of_hyps.size(); i++ ){
+        cerr << i << " ";
+        printWordIDVec(vec_of_hyps[i]);
+        cerr << endl;
+        unsigned sentid= iteration_ - vec_of_hyps.size() + i;
+        cerr << "updating sentence # " << sentid << endl;
+        queries_.setSentence( sentid , vec_of_hyps[i]);
+      }
     }
 
     inline void Reset() {
-    	if ( isFirstEpoch_ ) {
-    		isFirstEpoch_ = false;
-    	}
-		iteration_ = 0;
-		cout << "is first epoch? " << isFirstEpoch_ << endl;
-	}
+      if ( isFirstEpoch_ ) {
+        isFirstEpoch_ = false;
+      }
+    iteration_ = 0;
+    cout << "is first epoch? " << isFirstEpoch_ << endl;
+  }
 
 private:
-	unsigned iteration_;
- 	DocumentCollection docs_;
- 	QueryCollection queries_;
- 	Retrieval retrieval_;
- 	bool isFirstEpoch_;
- 	unsigned heap_size_;
- 	unsigned batch_size_;
+  unsigned iteration_;
+   DocumentCollection docs_;
+   QueryCollection queries_;
+   Retrieval retrieval_;
+   bool isFirstEpoch_;
+   unsigned heap_size_;
+   unsigned batch_size_;
 // 	void retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results );
 // 	score_t averagePrecision( MyHeap& results,
 //    		Query& query, const unsigned rank );

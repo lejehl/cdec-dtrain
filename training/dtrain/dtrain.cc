@@ -1,9 +1,12 @@
+#include <omp.h>
 #include "dtrain.h"
 #include "score.h"
 #include "kbestget.h"
 #include "ksampler.h"
 #include "pairsampling.h"
 #include "viterbiget.h"
+#include "logval.h"
+
 
 using namespace dtrain;
 
@@ -13,46 +16,49 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
 {
   po::options_description ini("Configuration File Options");
   ini.add_options()
-    ("input",             po::value<string>()->default_value("-"),                                             "input file (src)")
-    ("refs,r",            po::value<string>(),                                                                       "references")
-    ("output",            po::value<string>()->default_value("-"),                          "output weights file, '-' for STDOUT")
-    ("input_weights",     po::value<string>(),                                "input weights file (e.g. from previous iteration)")
-    ("decoder_config",    po::value<string>(),                                                      "configuration file for cdec")
-    ("print_weights",     po::value<string>(),                                               "weights to print on each iteration")
-    ("stop_after",        po::value<unsigned>()->default_value(0),                                 "stop after X input sentences")
-    ("keep",              po::value<bool>()->zero_tokens(),                               "keep weights files for each iteration")
-    ("epochs",            po::value<unsigned>()->default_value(10),                               "# of iterations T (per shard)")
-    ("k",                 po::value<unsigned>()->default_value(100),                            "how many translations to sample")
-    ("sample_from",       po::value<string>()->default_value("kbest"),     "where to sample translations from: 'kbest', 'forest'")
-    ("filter",            po::value<string>()->default_value("uniq"),                          "filter kbest list: 'not', 'uniq'")
-    ("pair_sampling",     po::value<string>()->default_value("XYX"),                 "how to sample pairs: 'all', 'XYX' or 'PRO'")
-    ("hi_lo",             po::value<float>()->default_value(0.1),                   "hi and lo (X) for XYX (default 0.1), <= 0.5")
-    ("pair_threshold",    po::value<score_t>()->default_value(0.),                         "bleu [0,1] threshold to filter pairs")
-    ("N",                 po::value<unsigned>()->default_value(4),                                          "N for Ngrams (BLEU)")
-    ("scorer",            po::value<string>()->default_value("stupid_bleu"), "scoring: bleu, stupid_, smooth_, approx_, lc_, map")
-    ("learning_rate",     po::value<weight_t>()->default_value(1.0),                                              "learning rate")
-    ("gamma",             po::value<weight_t>()->default_value(0.),                            "gamma for SVM (0 for perceptron)")
-    ("select_weights",    po::value<string>()->default_value("last"),     "output best, last, avg weights ('VOID' to throw away)")
-    ("rescale",           po::value<bool>()->zero_tokens(),                              "rescale weight vector after each input")
-    ("l1_reg",            po::value<string>()->default_value("none"), "apply l1 regularization as in 'Tsuroka et al' (2010) UNTESTED")
-    ("l1_reg_strength",   po::value<weight_t>(),                                                     "l1 regularization strength")
-    ("fselect",           po::value<weight_t>()->default_value(-1), "select top x percent (or by threshold) of features after each epoch NOT IMPLEMENTED") // TODO
-    ("approx_bleu_d",     po::value<score_t>()->default_value(0.9),                                   "discount for approx. BLEU")
-    ("scale_bleu_diff",   po::value<bool>()->zero_tokens(),                      "learning rate <- bleu diff of a misranked pair")
-    ("loss_margin",       po::value<weight_t>()->default_value(0.),  "update if no error in pref pair but model scores this near")
-    ("max_pairs",         po::value<unsigned>()->default_value(std::numeric_limits<unsigned>::max()), "max. # of pairs per Sent.")
-    ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights")
-    // additional options for scoring with MAP
-    ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
-    ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
-    ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations")
-    ("num_retrieved",	  po::value<unsigned>()->default_value(10),					  "mapscoring: number of retrieved documents");
+                                                ("input",             po::value<string>()->default_value("-"),                                             "input file (src)")
+                                                ("refs,r",            po::value<string>(),                                                                       "references")
+                                                ("output",            po::value<string>()->default_value("-"),                          "output weights file, '-' for STDOUT")
+                                                ("input_weights",     po::value<string>(),                                "input weights file (e.g. from previous iteration)")
+                                                ("decoder_config",    po::value<string>(),                                                      "configuration file for cdec")
+                                                ("print_weights",     po::value<string>(),                                               "weights to print on each iteration")
+                                                ("stop_after",        po::value<unsigned>()->default_value(0),                                 "stop after X input sentences")
+                                                ("keep",              po::value<bool>()->zero_tokens(),                               "keep weights files for each iteration")
+                                                ("epochs",            po::value<unsigned>()->default_value(10),                               "# of iterations T (per shard)")
+                                                ("k",                 po::value<unsigned>()->default_value(100),                            "how many translations to sample")
+                                                ("sample_from",       po::value<string>()->default_value("kbest"),     "where to sample translations from: 'kbest', 'forest'")
+                                                ("filter",            po::value<string>()->default_value("uniq"),                          "filter kbest list: 'not', 'uniq'")
+                                                ("pair_sampling",     po::value<string>()->default_value("XYX"),                 "how to sample pairs: 'all', 'XYX' or 'PRO'")
+                                                ("hi_lo",             po::value<float>()->default_value(0.1),                   "hi and lo (X) for XYX (default 0.1), <= 0.5")
+                                                ("pair_threshold",    po::value<score_t>()->default_value(0.),                         "bleu [0,1] threshold to filter pairs")
+                                                ("N",                 po::value<unsigned>()->default_value(4),                                          "N for Ngrams (BLEU)")
+                                                ("scorer",            po::value<string>()->default_value("stupid_bleu"), "scoring: bleu, stupid_, smooth_, approx_, lc_, map")
+                                                ("learning_rate",     po::value<weight_t>()->default_value(1.0),                                              "learning rate")
+                                                ("gamma",             po::value<weight_t>()->default_value(0.),                            "gamma for SVM (0 for perceptron)")
+                                                ("select_weights",    po::value<string>()->default_value("last"),     "output best, last, avg weights ('VOID' to throw away)")
+                                                ("rescale",           po::value<bool>()->zero_tokens(),                              "rescale weight vector after each input")
+                                                ("l1_reg",            po::value<string>()->default_value("none"), "apply l1 regularization as in 'Tsuroka et al' (2010) UNTESTED")
+                                                ("l1_reg_strength",   po::value<weight_t>(),                                                     "l1 regularization strength")
+                                                ("fselect",           po::value<weight_t>()->default_value(-1), "select top x percent (or by threshold) of features after each epoch NOT IMPLEMENTED") // TODO
+                                                ("approx_bleu_d",     po::value<score_t>()->default_value(0.9),                                   "discount for approx. BLEU")
+                                                ("scale_bleu_diff",   po::value<bool>()->zero_tokens(),                      "learning rate <- bleu diff of a misranked pair")
+                                                ("loss_margin",       po::value<weight_t>()->default_value(0.),  "update if no error in pref pair but model scores this near")
+                                                ("max_pairs",         po::value<unsigned>()->default_value(std::numeric_limits<unsigned>::max()), "max. # of pairs per Sent.")
+                                                ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights")
+                                                // additional options for scoring with MAP
+                                                ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
+                                                ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
+                                                ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations")
+                                                ("sw_file",		      po::value<string>()->default_value(""),							  	"mapscoring: stopword file (optional)")
+                                                ("num_retrieved",	  po::value<unsigned>()->default_value(10),					  "mapscoring: number of retrieved documents")
+                                                ("num_threads",	  po::value<unsigned>()->default_value(4),					  "mapscoring: number of parallel threads")
+                                                ("query_trans",	  po::value<string>()->default_value(""),					  "mapscoring: supply initial query translations");
 
   po::options_description cl("Command Line Options");
   cl.add_options()
-    ("config,c",         po::value<string>(),              "dtrain config file")
-    ("quiet,q",          po::value<bool>()->zero_tokens(),           "be quiet")
-    ("verbose,v",        po::value<bool>()->zero_tokens(),         "be verbose");
+                                                ("config,c",         po::value<string>(),              "dtrain config file")
+                                                ("quiet,q",          po::value<bool>()->zero_tokens(),           "be quiet")
+                                                ("verbose,v",        po::value<bool>()->zero_tokens(),         "be verbose");
   cl.add(ini);
   po::store(parse_command_line(argc, argv, cl), *cfg);
   if (cfg->count("config")) {
@@ -65,17 +71,17 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
     return false;
   }
   if ((*cfg)["sample_from"].as<string>() != "kbest"
-       && (*cfg)["sample_from"].as<string>() != "forest") {
+      && (*cfg)["sample_from"].as<string>() != "forest") {
     cerr << "Wrong 'sample_from' param: '" << (*cfg)["sample_from"].as<string>() << "', use 'kbest' or 'forest'." << endl;
     return false;
   }
   if ((*cfg)["sample_from"].as<string>() == "kbest" && (*cfg)["filter"].as<string>() != "uniq" &&
-        (*cfg)["filter"].as<string>() != "not") {
+      (*cfg)["filter"].as<string>() != "not") {
     cerr << "Wrong 'filter' param: '" << (*cfg)["filter"].as<string>() << "', use 'uniq' or 'not'." << endl;
     return false;
   }
   if ((*cfg)["pair_sampling"].as<string>() != "all" && (*cfg)["pair_sampling"].as<string>() != "XYX" &&
-        (*cfg)["pair_sampling"].as<string>() != "PRO") {
+      (*cfg)["pair_sampling"].as<string>() != "PRO") {
     cerr << "Wrong 'pair_sampling' param: '" << (*cfg)["pair_sampling"].as<string>() << "'." << endl;
     return false;
   }
@@ -91,7 +97,7 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
     return false;
   }
   if ((*cfg)["select_weights"].as<string>() != "last" && (*cfg)["select_weights"].as<string>() != "best" &&
-        (*cfg)["select_weights"].as<string>() != "avg" && (*cfg)["select_weights"].as<string>() != "VOID") {
+      (*cfg)["select_weights"].as<string>() != "avg" && (*cfg)["select_weights"].as<string>() != "VOID") {
     cerr << "Wrong 'select_weights' param: '" << (*cfg)["select_weights"].as<string>() << "', use 'last' or 'best'." << endl;
     return false;
   }
@@ -102,6 +108,7 @@ int
 main(int argc, char** argv)
 {
   // handle most parameters
+
   po::variables_map cfg;
   if (!dtrain_init(argc, argv, &cfg)) exit(1); // something is wrong
   bool quiet = false;
@@ -154,7 +161,21 @@ main(int argc, char** argv)
   string query_fn =  cfg["query_file"].as<string>();
   string doc_fn =  cfg["doc_file"].as<string>();
   string rels_fn =  cfg["rel_file"].as<string>();
+  string stopwords =  cfg["sw_file"].as<string>();
   unsigned num_retr = cfg["num_retrieved"].as<unsigned>();
+  unsigned threads = cfg["num_threads"].as<unsigned>();
+  string init_trans_fn =  cfg["query_trans"].as<string>();
+  ReadFile init_trans;
+  if ( init_trans_fn != "" ) {
+    init_trans.Init(  init_trans_fn );
+  }
+
+
+#ifdef _OPENMP
+  omp_set_dynamic(0);
+  omp_set_num_threads(threads);
+#endif
+
   cout << "num retrieved is " << num_retr << endl;
 
   cerr << "creating scorer ..." << endl;
@@ -176,9 +197,9 @@ main(int argc, char** argv)
   } else if (scorer_str == "approx_bleu") {
     scorer = static_cast<ApproxBleuScorer*>(new ApproxBleuScorer(N, approx_bleu_d));
   } else if (scorer_str == "lc_bleu") {
-	scorer = static_cast<LinearBleuScorer*>(new LinearBleuScorer(N));
+    scorer = static_cast<LinearBleuScorer*>(new LinearBleuScorer(N));
   } else if (scorer_str == "map" ) {
-	scorer = static_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn, num_retr ));
+    scorer = static_cast<MapScorer*>(new MapScorer( query_fn, doc_fn, rels_fn, stopwords , num_retr ));
   } else {
     cerr << "Don't know scoring metric: '" << scorer_str << "', exiting." << endl;
     exit(1);
@@ -241,6 +262,9 @@ main(int argc, char** argv)
   string refs_fn = cfg["refs"].as<string>();
   ReadFile refs(refs_fn);
 
+
+
+
   unsigned in_sz = std::numeric_limits<unsigned>::max(); // input index, input size
   vector<pair<score_t, score_t> > all_scores;
   score_t max_score = 0.;
@@ -288,373 +312,525 @@ main(int argc, char** argv)
   cerr << "finished setup .. " << endl;
 
   //  if MAP is used, do one pass over the data and set the viterbi translations in the scorer. why do we need this?
-//  if ( scorer_str == "map" ) {
-//  	  cerr << "setting viterbi translations" << endl;
-//
-//  	  ViterbiGetter* v = new ViterbiGetter();
-//  	  string in;
-//  	  unsigned it = 0;
-//  	  while(getline(*input, in)){
-//  //		  if ( ii+1 % 5 == 0 ){
-//  			  cerr << "." ;
-//  //		  	  }
-//  		  if ( (it+1) % 30 == 0 ){
-//  		  			  cerr << it+1 << endl;
-//  		  		  }
-//  		  decoder.Decode( in, v);
-//  		  score_t s;
-//  		  // use this to set the translation. UGLY!
-//  		  s = scorer->Score( v->transl_, v->transl_, 0, 0 );
-//  		  scorer->increaseIter();
-//  		  src_str_buf.push_back( in );
-//  		  it++;
-//
-//  	  }
-//  	  in_sz = it;
-//  	  scorer->Reset();
-//  	  cerr << endl;
-//  	  cerr << "done" << endl;
-//
-//    }
+  if ( scorer_str == "map" ) {
+
+    ViterbiGetter* v = new ViterbiGetter();
+    string in;
+    string trans;
+    vector< vector<WordID> > hyps;
+    unsigned it = 0;
+    WriteFile qt;
+    if (init_trans_fn == "" ) {
+      qt.Init("queries.transl"); // works with '-'
+    }
+    ostream& o = *qt.stream();
+
+
+    while(getline(*input, in)){
+      //		  if ( ii+1 % 5 == 0 ){
+      if (init_trans_fn == "" ) {
+        if (it == 0)
+          cerr << "setting viterbi translations" << endl;
+        cerr << "." ;
+        if ( (it+1) % 30 == 0 )
+          cerr << it+1 << endl;
+        decoder.Decode( in, v);
+        hyps.push_back( v->transl_ );
+        for (unsigned i = 0; i< v->transl_.size(); i++ ) {
+          o << TD::Convert( v->transl_[i]);
+          //        cerr << TD::Convert( v->transl_[i]);
+          if (i < v->transl_.size()-1) o << " ";
+        }
+        o << endl;
+      } else {
+        if (it == 0 )
+                cerr << "loading translations" << endl;
+        getline(*init_trans, trans );
+        vector<string> tok;
+        vector<WordID> ids;
+        boost::split( tok, trans, boost::is_any_of(" "));
+        register_and_convert( tok, ids);
+        hyps.push_back( ids );
+      }
+      src_str_buf.push_back( in );
+      it++;
+      scorer->increaseIter();
+    }
+
+    scorer->updateSentences(hyps );
+    in_sz = it;
+    scorer->Reset();
+    cerr << endl;
+    cerr << "done" << endl;
+  }
 
   //	if ("scorer_str" == "map" ) {
   SparseVector<weight_t> diff_vec; // initialize weight vector (for mini-batch update)
   unsigned batch_size = 0;
   vector< vector<WordID> > top_hyps;
   //	}
+  WriteFile lf("loss"); // works with '-'
+  ostream& o = *lf.stream();
+  o.precision(17);
 
   // begin outer loop
   for (unsigned t = 0; t < T; t++) // T epochs
   {
 
-  time_t start, end;
-  time(&start);
-  score_t score_sum = 0.;
-  score_t model_sum(0);
-  unsigned ii = 0, rank_errors = 0, margin_violations = 0, npairs = 0, f_count = 0, list_sz = 0;
-  if (!quiet) cerr << "Iteration #" << t+1 << " of " << T << "." << endl;
+    time_t start, end;
+    time(&start);
+    score_t score_sum = 0.;
+    score_t model_sum(0);
+    unsigned ii = 0, rank_errors = 0, margin_violations = 0, npairs = 0, f_count = 0, list_sz = 0;
+    if (!quiet) cerr << "Iteration #" << t+1 << " of " << T << "." << endl;
 
-  // begin inner loop
-  while(true)
-  {
+    score_t loss = 0.;
+    vector<pair<ScoredHyp,ScoredHyp> > batch_pairs;
 
-    string in;
-    bool next = false, stop = false; // next iteration or premature stop
-//    if ( (t == 0) && (scorer_str != "map") ) {
-        if ( t == 0 ) {
-//    	cerr << "this shoulnd't happen if scoring with map" << endl;
-      if(!getline(*input, in)) next = true;
-//      cerr << "no lines in input " << endl;
-    } else {
-//    	cerr << "ii == sz - this also shouldn't happen" << endl;
-      if (ii == in_sz) next = true; // stop if we reach the end of our input
-    }
-    // stop after X sentences (but still go on for those)
-    if (stop_after > 0 && stop_after == ii && !next) stop = true;
+    // begin inner loop
+    while(true)
+    {
 
-    // produce some pretty output
-    if (!quiet && !verbose) {
-      if (ii == 0) cerr << " ";
-      if ((ii+1) % (DTRAIN_DOTS) == 0) {
-        cerr << ".";
-        cerr.flush();
-      }
-      if ((ii+1) % (20*DTRAIN_DOTS) == 0) {
-        cerr << " " << ii+1 << endl;
-        if (!next && !stop) cerr << " ";
-      }
-      if (stop) {
-        if (ii % (20*DTRAIN_DOTS) != 0) cerr << " " << ii << endl;
-        cerr << "Stopping after " << stop_after << " input sentences." << endl;
+      string in;
+      bool next = false, stop = false; // next iteration or premature stop
+      if ( (t == 0) && (scorer_str != "map") ) {
+        //      if ( t == 0 ) {
+        //    	cerr << "this shoulnd't happen if scoring with map" << endl;
+        if(!getline(*input, in)) next = true;
+        //      cerr << "no lines in input " << endl;
       } else {
-        if (next) {
+        //    	cerr << "ii == sz - this also shouldn't happen" << endl;
+        if (ii == in_sz) next = true; // stop if we reach the end of our input
+      }
+      // stop after X sentences (but still go on for those)
+      if (stop_after > 0 && stop_after == ii && !next) stop = true;
+
+      // produce some pretty output
+      if (!quiet && !verbose) {
+        if (ii == 0) cerr << " ";
+        if ((ii+1) % (DTRAIN_DOTS) == 0) {
+          cerr << ".";
+          cerr.flush();
+        }
+        if ((ii+1) % (20*DTRAIN_DOTS) == 0) {
+          cerr << " " << ii+1 << endl;
+          if (!next && !stop) cerr << " ";
+        }
+        if (stop) {
           if (ii % (20*DTRAIN_DOTS) != 0) cerr << " " << ii << endl;
+          cerr << "Stopping after " << stop_after << " input sentences." << endl;
+        } else {
+          if (next) {
+            if (ii % (20*DTRAIN_DOTS) != 0) cerr << " " << ii << endl;
+          }
         }
       }
-    }
 
-    // next iteration
-    if (next || stop) break;
+      // next iteration
+      if (next || stop) break;
 
-    // weights
-//    cerr << "initialize weights" << endl;
-    lambdas.init_vector(&dense_weights);
+      // weights
+      // pass weights to decoder
+      lambdas.init_vector(&dense_weights);
 
-    // getting input
-    cout << "read references..." << endl;
-    vector<WordID> ref_ids; // reference as vector<WordID>
-    if (t == 0 ) {
-    	src_str_buf.push_back(in);
-    }
+      // getting input
+      cout << "read references..." << endl;
 
-    if (scorer_str != "map" ) {
-    if (t == 0 ) {
-      string r_;
-      getline(*refs, r_);
-      vector<string> ref_tok;
-      boost::split(ref_tok, r_, boost::is_any_of(" "));
-      register_and_convert(ref_tok, ref_ids);
-      ref_ids_buf.push_back(ref_ids);
-//      if ( scorer_str != "map" ){
-//    	  cerr << "shouldn't happen with map" << endl;
-   //   src_str_buf.push_back(in);
-//      }
-    } else {
-      ref_ids = ref_ids_buf[ii];
-    }
-    }
-//    cerr << "decode" << endl;
-    observer->SetRef(ref_ids);
-//    if ( (t == 0) && ( scorer_str != "map") ){
-        if ( t == 0 ){
-
-//    	cerr << "shouldn't happen with map" << endl;
-      cout << "decoding...\n";
-      decoder.Decode(in, observer);
-    }
-    else {
-    	cout << "decoding...\n";
-      decoder.Decode(src_str_buf[ii], observer);
-    }
-
-    // get (scored) samples
-    cout << "get scored samples..." << endl;
-    vector<ScoredHyp>* samples = observer->GetSamples();
-
-    if (verbose) {
-      if ( scorer_str != "map") {
-      cerr << "--- ref for " << ii << ": ";
-      if (t > 0) printWordIDVec(ref_ids_buf[ii]);
-      else printWordIDVec(ref_ids);
-      cerr << endl;
+      vector<WordID> ref_ids; // reference as vector<WordID>
+      if (t == 0 && scorer_str != "map") {
+        src_str_buf.push_back(in);
       }
-      for (unsigned u = 0; u < samples->size(); u++) {
-        cerr << _p2 << _np << "[" << u << ". '";
-        printWordIDVec((*samples)[u].w);
-        cerr << "'" << endl;
-        cerr << "SCORE=" << (*samples)[u].score << ",model="<< (*samples)[u].model << endl;
-        cerr << "F{" << (*samples)[u].f << "} ]" << endl << endl;
+
+      if (scorer_str != "map" )
+      {
+        if (t == 0 ) {
+          string r_;
+          getline(*refs, r_);
+          vector<string> ref_tok;
+          boost::split(ref_tok, r_, boost::is_any_of(" "));
+          register_and_convert(ref_tok, ref_ids);
+          ref_ids_buf.push_back(ref_ids);
+          //      if ( scorer_str != "map" ){
+          //    	  cerr << "shouldn't happen with map" << endl;
+          //   src_str_buf.push_back(in);
+          //      }
+        } else {
+          ref_ids = ref_ids_buf[ii];
+        }
+
+        //    cerr << "decode" << endl;
+        observer->SetRef(ref_ids);
+
       }
-    }
+      if ( (t == 0) && ( scorer_str != "map") ){
+        //      if ( t == 0 ){
 
-    score_sum += (*samples)[0].score; // stats for 1best
-    model_sum += (*samples)[0].model;
+        //    	cerr << "shouldn't happen with map" << endl;
+        cout << "decoding...\n";
+        decoder.Decode(in, observer);
+      }
+      else {
+        cout << "decoding...\n";
+        decoder.Decode(src_str_buf[ii], observer);
+      }
 
-    f_count += observer->get_f_count();
-    list_sz += observer->get_sz();
+      // get (scored) samples
+      cout << "get scored samples..." << endl;
+      vector<ScoredHyp>* samples = observer->GetSamples();
 
-    // increase iteration here
-    if (scorer_str == "map") {
-    	if (t == 0 ) {
-    		top_hyps.push_back((*samples)[0].w);
-    		scorer->updateSentences(top_hyps); // use Viterbi translation if t is 0
-    	} else {
+      if (verbose) {
+        if ( scorer_str != "map") {
+          cerr << "--- ref for " << ii << ": ";
+          if (t > 0) printWordIDVec(ref_ids_buf[ii]);
+          else printWordIDVec(ref_ids);
+          cerr << endl;
+        }
+        for (unsigned u = 0; u < samples->size(); u++) {
+          cerr << _p2 << _np << "[" << u << ". '";
+          printWordIDVec((*samples)[u].w);
+          cerr << "'" << endl;
+          cerr << "SCORE=" << (*samples)[u].score << ",model="<< (*samples)[u].model << endl;
+          cerr << "F{" << (*samples)[u].f << "} ]" << endl << endl;
+        }
+      }
 
-    	int max_pos;
-    	score_t curr_max = 0;
-    	// find maximum scoring hypothesis
-    	for ( int i =0; i < (*samples).size(); i++ ) {
-    		if ( (*samples)[i].score > curr_max ) {
-    			max_pos = i;
-    			curr_max = (*samples)[i].score;
-    		}
-    	}
-    	cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
-    	top_hyps.push_back( (*samples)[max_pos].w );
-    	}
-    	scorer->increaseIter( );
-    }
+      score_sum += (*samples)[0].score; // stats for 1best
+      model_sum += (*samples)[0].model;
+
+      f_count += observer->get_f_count();
+      list_sz += observer->get_sz();
+
+      // for MAP: increase iteration
+      if (scorer_str == "map") {
+        if (t != 0 ) {
+          //          top_hyps.push_back((*samples)[0].w);
+          //          //    		scorer->updateSentences(top_hyps); // use Viterbi translation if t is 0
+          //        } else {
+          int max_pos;
+          score_t curr_max = 0;
+
+          // find maximum scoring hypothesis
+          for ( int i =0; i < (*samples).size(); i++ ) {
+            if ( (*samples)[i].score > curr_max ) {
+              max_pos = i;
+              curr_max = (*samples)[i].score;
+            }
+          }
+          cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
+          top_hyps.push_back( (*samples)[max_pos].w );
+        }
+        scorer->increaseIter( );
+      }
 
 
-    // weight updates
-    // if using MAP, don't do an update for first iteration
-    if (!noup && !( scorer_str == "map" && t == 0) ) {
+      // weight updates
+      // if using MAP, don't do an update for first iteration
+      //      if (!noup && !( scorer_str == "map" && t == 0) ) {
+      if (!noup  ) {
 
-      // get pairs
-      cout << "get pairs ...\n";
-      vector<pair<ScoredHyp,ScoredHyp> > pairs;
-      if (pair_sampling == "all")
-        all_pairs(samples, pairs, pair_threshold, max_pairs, faster_perceptron);
-      if (pair_sampling == "XYX")
-        partXYX(samples, pairs, pair_threshold, max_pairs, faster_perceptron, hi_lo);
-      if (pair_sampling == "PRO")
-        PROsampling(samples, pairs, pair_threshold, max_pairs);
-      npairs += pairs.size();
+        // get pairs
+        cout << "get pairs ...\n";
+        vector<pair<ScoredHyp,ScoredHyp> > pairs;
+        if (pair_sampling == "all")
+          all_pairs(samples, pairs, pair_threshold, max_pairs, faster_perceptron);
+        if (pair_sampling == "XYX")
+          partXYX(samples, pairs, pair_threshold, max_pairs, faster_perceptron, hi_lo);
+        if (pair_sampling == "PRO")
+          PROsampling(samples, pairs, pair_threshold, max_pairs);
+        npairs += pairs.size();
+        // add pairs to batch
+        for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = pairs.begin();
+            it != pairs.end(); it++) {
+          batch_pairs.push_back( *it );
+        }
+      }
+      ++ii;
+
+    } // input loop
+
+
+    // do update for all pairs
+    //    if (!noup && !( scorer_str == "map" && t == 0) ) {
+    if (!noup  ) {
 
       cout << "do update... \n";
-      for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = pairs.begin();
-           it != pairs.end(); it++) {
-        bool rank_error;
-        score_t margin;
-        if (faster_perceptron) { // we only have considering misranked pairs
-          rank_error = true; // pair sampling already did this for us
-          margin = std::numeric_limits<float>::max();
-        } else {
-          rank_error = it->first.model <= it->second.model;
-          margin = fabs(fabs(it->first.model) - fabs(it->second.model));
-          if (!rank_error && margin < loss_margin) margin_violations++;
-        }
-        if (rank_error) rank_errors++;
-        if (scale_bleu_diff) eta = it->first.score - it->second.score;
-        // update if margin < loss_margin
-        if (rank_error || margin < loss_margin) {
-        	if ( scorer_str != "map" ) {
-        		diff_vec.clear();
-//        		SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
-        	    diff_vec = it->first.f - it->second.f;
-        	    lambdas.plus_eq_v_times_s(diff_vec, eta);  // add learning rate * gradient, update after every sentence
-//        	    cout << "weights after update: " << endl;
-//        	    for (int i =0; i<lambdas.size(); i++){
-//        	    	cout << lambdas[i] << " ";
-//        	    }
-//        	    cout << endl;
-        	}
-
-        	else {
-        		diff_vec += it->first.f - it->second.f;
-        		batch_size++; // add 1 for each "constraint"
-        	}
-          if (gamma)
-            lambdas.plus_eq_v_times_s(lambdas, -2*gamma*eta*(1./npairs));
-        }
-      }
-      // minibatch update: only update if we are at the end of a query
-      if (scorer_str == "map" && scorer->end_of_batch && batch_size > 0 ) {
-//            if (scorer_str == "map" && t>0 && ii==in_sz && batch_size > 0 ) {
-			cout << "end of batch: doing update\n";
-    	  lambdas.plus_eq_v_times_s(diff_vec, ( 1/(double) batch_size) * eta); // add learning rate * averaged gradient
-    	  cout << "C=" << batch_size << endl; // TODO: check if batch_size is 0!
-    	  scorer->updateSentences( top_hyps );
-    	  diff_vec.clear();
-    	  batch_size = 0;
-    	  top_hyps.clear();
-      }
+      cerr.precision(17);
+      const unsigned s = batch_pairs.size();
+      vector< SparseVector<weight_t> > grads_j;
+      grads_j.resize(s);
+      vector <score_t> loss_j;
+      loss_j.resize(s);
+      vector<bool> re_j;
+      re_j.resize(s);
 
 
-      // l1 regularization
-      // please note that this penalizes _all_ weights
-      // (contrary to only the ones changed by the last update)
-      // after a _sentence_ (not after each example/pair)
-      if (l1naive) {
-        FastSparseVector<weight_t>::iterator it = lambdas.begin();
-        for (; it != lambdas.end(); ++it) {
-          it->second -= sign(it->second) * l1_reg;
+      for (int i = 500; i> 0; i--) {
+
+        loss = 0.;
+        loss_j.clear();
+        grads_j.clear();
+        re_j.clear();
+
+        // BEGIN PARALLEL
+        // parallelize gradient aggregation over all pairs
+
+
+        //          for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = pairs.begin();
+        //                for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = batch_pairs.begin();
+        //                    it != batch_pairs.end(); it++) {
+
+
+
+
+
+# pragma omp parallel for
+        for (unsigned j = 0; j< s;  j++ ) {
+          //          vector< pair<ScoredHyp,ScoredHyp> >::iterator it = batch_pairs.begin() + j;
+          bool rank_error;
+          score_t margin;
+          //          if (faster_perceptron) { // we only have considering misranked pairs
+          //            rank_error = true; // pair sampling already did this for us
+          //            margin = std::numeric_limits<float>::max();
+          //          } else {
+          //            rank_error = it->first.model <= it->second.model;
+          cerr << "first.model: " << batch_pairs[j].first.model;
+             cerr << ", second.model: " << batch_pairs[j].second.model << endl;
+
+          if (i < 500 ) {
+              cerr << "Updating model scores" << endl;
+            batch_pairs[j].first.model = lambdas.dot( batch_pairs[j].first.f) ;
+            batch_pairs[j].second.model = lambdas.dot( batch_pairs[j].second.f) ;
+            //              it->first.model = lambdas.dot( it->first.f) ;
+            //              it->second.model = lambdas.dot( it->second.f) ;
+          }
+                      cerr << "first.model: " << batch_pairs[j].first.model;
+                      cerr << ", second.model: " << batch_pairs[j].second.model << endl;
+
+          rank_error = batch_pairs[j].first.model <= batch_pairs[j].second.model;
+          margin = fabs((batch_pairs[j].first.model) - (batch_pairs[j].second.model));
+
+          //            rank_error = it->first.model <= it->second.model;
+          //            margin = fabs((it->first.model) - (it->second.model));
+          //            if (!rank_error && margin < loss_margin) margin_violations++;
+
+          //          }
+          //          if (rank_error) rank_errors++;
+          //          if (scale_bleu_diff) eta = it->first.score - it->second.score;
+          // update if margin < loss_margin
+          if (rank_error || margin < loss_margin) {
+            //#pragma omp critical(update_loss)
+            //            loss += loss_margin - ( batch_pairs[j].first.model - batch_pairs[j].second.model);
+            loss_j[j] = loss_margin - ( batch_pairs[j].first.model - batch_pairs[j].second.model);
+            //            loss += loss_margin - ( it->first.model - it->second.model);
+            //            cerr << "i=" << i << ", loss: " << loss << endl;
+
+            //            if ( scorer_str != "map" ) {
+            //              diff_vec.clear();
+            //              //        		SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
+            //              diff_vec = it->first.f - it->second.f;
+            //              lambdas.plus_eq_v_times_s(diff_vec, eta);  // add learning rate * gradient, update after every pair
+            //        	    cout << "weights after update: " << endl;
+            //        	    for (int i =0; i<lambdas.size(); i++){
+            //        	    	cout << lambdas[i] << " ";
+            //        	    }
+            //        	    cout << endl;
+            //            }
+            //
+            //            else {
+            //#pragma omp critical(update_diff_vec)
+            //            {
+//                          diff_vec += batch_pairs[j].first.f - batch_pairs[j].second.f;
+            grads_j[j] = batch_pairs[j].first.f - batch_pairs[j].second.f;
+            re_j[j] = true;
+            //            }
+            //            }
+            //              batch_size++; // add 1 for each "constraint"
+          } else {
+            re_j[j] = false;
+          }
+          //            if (gamma)
+          //              lambdas.plus_eq_v_times_s(lambdas, -2*gamma*eta*(1./npairs));
         }
-      } else if (l1clip) {
-        FastSparseVector<weight_t>::iterator it = lambdas.begin();
-        for (; it != lambdas.end(); ++it) {
-          if (it->second != 0) {
-            weight_t v = it->second;
-            if (v > 0) {
-              it->second = max(0., v - l1_reg);
-            } else {
-              it->second = min(0., v + l1_reg);
+
+        // END PARALLEL
+
+        // minibatch update: only update if we are at the end of a query
+        //        if (scorer_str == "map" && scorer->end_of_batch && batch_size > 0 ) {
+        // update after every sentence
+        cerr << "end of update iteration. Total loss: " << loss << endl;
+        if (scorer_str == "map"  ) {
+          for (unsigned i =0; i< s; i++) {
+            loss += loss_j[i];
+            if (re_j[i] == true )
+            diff_vec += grads_j[i];
+          }
+
+
+          //            if (scorer_str == "map" && t>0 && ii==in_sz && batch_size > 0 ) {
+          cerr << "updating weights\n";
+          // pass weights to decoder
+          //            lambdas.init_vector(&dense_weights);
+
+          //          lambdas.plus_eq_v_times_s(diff_vec, ( 1/(double) batch_size) * eta); // add learning rate * averaged gradient
+          lambdas.plus_eq_v_times_s(diff_vec, eta);
+          for (vector<string>::iterator it = print_weights.begin(); it != print_weights.end(); it++) {
+            cerr << setw(18) << *it << " = " << lambdas.get(FD::Convert(*it)) << ", ";
+          }
+          cerr << endl;
+          //          cout << "C=" << batch_size << endl; // TODO: check if batch_size is 0!
+          diff_vec.clear();
+          //          batch_size = 0;
+          // update scored hyps and sort
+          //          score_t top_model = -std::numeric_limits<double>::infinity();
+          //          score_t top_ndcg = 0.;
+          //          for ( int i =0; i < (*samples).size(); i++ ) {
+          //            (*samples)[i].model = lambdas.dot( (*samples)[i].f );
+          //            if ( (*samples)[i].model > top_model) {
+          //              top_model = (*samples)[i].model;
+          //              top_ndcg = (*samples)[i].score;
+          //
+          //            }
+          //          }
+          //          cerr << "Top1 model score: " << top_model << ", Top 1 ndcg: " << top_ndcg << endl;
+          //        }
+          cerr << "loss: " << loss << endl;
+          o << loss << endl;
+        }
+
+
+        // l1 regularization
+        // please note that this penalizes _all_ weights
+        // (contrary to only the ones changed by the last update)
+        // after a _sentence_ (not after each example/pair)
+        if (l1naive) {
+          FastSparseVector<weight_t>::iterator it = lambdas.begin();
+          for (; it != lambdas.end(); ++it) {
+            it->second -= sign(it->second) * l1_reg;
+          }
+        } else if (l1clip) {
+          FastSparseVector<weight_t>::iterator it = lambdas.begin();
+          for (; it != lambdas.end(); ++it) {
+            if (it->second != 0) {
+              weight_t v = it->second;
+              if (v > 0) {
+                it->second = max(0., v - l1_reg);
+              } else {
+                it->second = min(0., v + l1_reg);
+              }
             }
           }
-        }
-      } else if (l1cumul) {
-        weight_t acc_penalty = (ii+1) * l1_reg; // ii is the index of the current input
-        FastSparseVector<weight_t>::iterator it = lambdas.begin();
-        for (; it != lambdas.end(); ++it) {
-          if (it->second != 0) {
-            weight_t v = it->second;
-            weight_t penalized = 0.;
-            if (v > 0) {
-              penalized = max(0., v-(acc_penalty + cumulative_penalties.get(it->first)));
-            } else {
-              penalized = min(0., v+(acc_penalty - cumulative_penalties.get(it->first)));
+        } else if (l1cumul) {
+          weight_t acc_penalty = (ii+1) * l1_reg; // ii is the index of the current input
+          FastSparseVector<weight_t>::iterator it = lambdas.begin();
+          for (; it != lambdas.end(); ++it) {
+            if (it->second != 0) {
+              weight_t v = it->second;
+              weight_t penalized = 0.;
+              if (v > 0) {
+                penalized = max(0., v-(acc_penalty + cumulative_penalties.get(it->first)));
+              } else {
+                penalized = min(0., v+(acc_penalty - cumulative_penalties.get(it->first)));
+              }
+              it->second = penalized;
+              cumulative_penalties.set_value(it->first, cumulative_penalties.get(it->first)+penalized);
             }
-            it->second = penalized;
-            cumulative_penalties.set_value(it->first, cumulative_penalties.get(it->first)+penalized);
           }
         }
       }
 
     } else {
-    	cout << "no update.\n";
+      cout << "no update.\n";
+    }
+
+    if (scorer_str == "map" && top_hyps.size() != 0 && scorer->end_of_batch ) {
+      scorer->updateSentences( top_hyps );
+      top_hyps.clear();
     }
 
     if (rescale) lambdas /= lambdas.l2norm();
 
-    ++ii;
-    // only for map: increase sentence count + set top 1 hyp as sentence
 
-  } // input loop
 
-  if (average) w_average += lambdas;
+    //      ++ii;
+    //
+    //    } // input loop
 
-  if (scorer_str == "approx_bleu" || scorer_str == "lc_bleu" || scorer_str == "map") scorer->Reset();
+    if (average) w_average += lambdas;
 
-  if (t == 0) {
-    in_sz = ii; // remember size of input (# lines)
+    if (scorer_str == "approx_bleu" || scorer_str == "lc_bleu" || scorer_str == "map") scorer->Reset();
 
-  }
+    if (t == 0) {
+      in_sz = ii; // remember size of input (# lines)
 
-  // print some stats
-  score_t score_avg = score_sum/(score_t)in_sz;
-  score_t model_avg = model_sum/(score_t)in_sz;
-  score_t score_diff, model_diff;
-  if (t > 0) {
-    score_diff = score_avg - all_scores[t-1].first;
-    model_diff = model_avg - all_scores[t-1].second;
-  } else {
-    score_diff = score_avg;
-    model_diff = model_avg;
-  }
-
-  unsigned nonz = 0;
-  if (!quiet) nonz = (unsigned)lambdas.num_nonzero();
-
-  if (!quiet) {
-    cerr << _p5 << _p << "WEIGHTS" << endl;
-    for (vector<string>::iterator it = print_weights.begin(); it != print_weights.end(); it++) {
-      cerr << setw(18) << *it << " = " << lambdas.get(FD::Convert(*it)) << endl;
     }
-    cerr << "        ---" << endl;
-    cerr << _np << "       1best avg score: " << score_avg;
-    cerr << _p << " (" << score_diff << ")" << endl;
-    cerr << _np << " 1best avg model score: " << model_avg;
-    cerr << _p << " (" << model_diff << ")" << endl;
-    cerr << "           avg # pairs: ";
-    cerr << _np << npairs/(float)in_sz;
-    if (faster_perceptron) cerr << " (meaningless)";
-    cerr << endl;
-    cerr << "        avg # rank err: ";
-    cerr << rank_errors/(float)in_sz << endl;
-    cerr << "     avg # margin viol: ";
-    cerr << margin_violations/(float)in_sz << endl;
-    cerr << "    non0 feature count: " <<  nonz << endl;
-    cerr << "           avg list sz: " << list_sz/(float)in_sz << endl;
-    cerr << "           avg f count: " << f_count/(float)list_sz << endl;
-  }
 
-  pair<score_t,score_t> remember;
-  remember.first = score_avg;
-  remember.second = model_avg;
-  all_scores.push_back(remember);
-  if (score_avg > max_score) {
-    max_score = score_avg;
-    best_it = t;
-  }
-  time (&end);
-  float time_diff = difftime(end, start);
-  overall_time += time_diff;
-  if (!quiet) {
-    cerr << _p2 << _np << "(time " << time_diff/60. << " min, ";
-    cerr << time_diff/in_sz << " s/S)" << endl;
-  }
-  if (t+1 != T && !quiet) cerr << endl;
+    // print some stats
+    score_t score_avg = score_sum/(score_t)in_sz;
+    score_t model_avg = model_sum/(score_t)in_sz;
+    score_t score_diff, model_diff;
+    if (t > 0) {
+      score_diff = score_avg - all_scores[t-1].first;
+      model_diff = model_avg - all_scores[t-1].second;
+    } else {
+      score_diff = score_avg;
+      model_diff = model_avg;
+    }
 
-  if (noup) break;
-  // only for MAP
-//  if ( scorer_str == "map" && t == 0 ) continue;
+    unsigned nonz = 0;
+    if (!quiet) nonz = (unsigned)lambdas.num_nonzero();
 
-  // write weights to file
-  if (select_weights == "best" || keep) {
-    lambdas.init_vector(&dense_weights);
-    string w_fn = "weights." + boost::lexical_cast<string>(t) + ".gz";
-    Weights::WriteToFile(w_fn, dense_weights, true);
-  }
+    if (!quiet) {
+      cerr << _p5 << _p << "WEIGHTS" << endl;
+      for (vector<string>::iterator it = print_weights.begin(); it != print_weights.end(); it++) {
+        cerr << setw(18) << *it << " = " << lambdas.get(FD::Convert(*it)) << endl;
+      }
+      cerr << "        ---" << endl;
+      cerr << _np << "       1best avg score: " << score_avg;
+      cerr << _p << " (" << score_diff << ")" << endl;
+      cerr << _np << " 1best avg model score: " << model_avg;
+      cerr << _p << " (" << model_diff << ")" << endl;
+      cerr << "           avg # pairs: ";
+      cerr << _np << npairs/(float)in_sz;
+      if (faster_perceptron) cerr << " (meaningless)";
+      cerr << endl;
+      cerr << "        avg # rank err: ";
+      cerr << rank_errors/(float)in_sz << endl;
+      cerr << "     avg # margin viol: ";
+      cerr << margin_violations/(float)in_sz << endl;
+      cerr << "    non0 feature count: " <<  nonz << endl;
+      cerr << "           avg list sz: " << list_sz/(float)in_sz << endl;
+      cerr << "           avg f count: " << f_count/(float)list_sz << endl;
+      cerr << "           total loss: " << loss << endl;
+    }
+
+    pair<score_t,score_t> remember;
+    remember.first = score_avg;
+    remember.second = model_avg;
+    all_scores.push_back(remember);
+    if (score_avg > max_score) {
+      max_score = score_avg;
+      best_it = t;
+    }
+    time (&end);
+    float time_diff = difftime(end, start);
+    overall_time += time_diff;
+    if (!quiet) {
+      cerr << _p2 << _np << "(time " << time_diff/60. << " min, ";
+      cerr << time_diff/in_sz << " s/S)" << endl;
+    }
+    if (t+1 != T && !quiet) cerr << endl;
+
+    if (noup) break;
+    // only for MAP
+    //  if ( scorer_str == "map" && t == 0 ) continue;
+
+    // write weights to file
+    if (select_weights == "best" || keep) {
+      lambdas.init_vector(&dense_weights);
+      string w_fn = "weights." + boost::lexical_cast<string>(t) + ".gz";
+      Weights::WriteToFile(w_fn, dense_weights, true);
+    }
+
 
   } // outer loop
 
@@ -669,12 +845,12 @@ main(int argc, char** argv)
       o << _np;
       if (average) {
         for (SparseVector<weight_t>::iterator it = w_average.begin(); it != w_average.end(); ++it) {
-	      if (it->second == 0) continue;
+          if (it->second == 0) continue;
           o << FD::Convert(it->first) << '\t' << it->second << endl;
         }
       } else {
         for (SparseVector<weight_t>::iterator it = lambdas.begin(); it != lambdas.end(); ++it) {
-	      if (it->second == 0) continue;
+          if (it->second == 0) continue;
           o << FD::Convert(it->first) << '\t' << it->second << endl;
         }
       }

@@ -1,6 +1,7 @@
 #ifndef _DTRAIN_KBESTGET_H_
 #define _DTRAIN_KBESTGET_H_
 
+#include <omp.h>
 #include "kbest.h"
 #include "dtrain.h"
 
@@ -56,10 +57,14 @@ struct KBestGetter : public HypSampler
       h.f = d->feature_values;
       h.model = log(d->score);
       h.rank = i;
-      h.score = scorer_->Score(h.w, *ref_, i, src_len_); // calculate per-sentence-(BLEU)score for hypothesis
+//      h.score = scorer_->Score(h.w, *ref_, i, src_len_); // calculate per-sentence-(BLEU)score for hypothesis
       s_.push_back(h);
       sz_++;
       f_count_ += h.f.size();
+    }
+# pragma omp parallel for
+    for (unsigned i=0; i<sz_; i++ ) {
+      s_[i].score = scorer_->Score(s_[i].w, *ref_, i, src_len_);
     }
   }
 
