@@ -113,6 +113,7 @@ inline void
 PROsampling(vector<ScoredHyp>* s, vector<pair<ScoredHyp,ScoredHyp> >& training, score_t threshold, unsigned max, bool _unused=false, float _also_unused=0)
 {
   unsigned max_count = 5000, count = 0, sz = s->size();
+  sort(s->begin(), s->end(), cmp_hyp_by_score_d); // sort hyp by score so in each pair the higher scoring hypothesis comes first
   bool b = false;
   for (unsigned i = 0; i < sz-1; i++) {
     for (unsigned j = i+1; j < sz; j++) {

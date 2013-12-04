@@ -20,28 +20,21 @@ using namespace std;
 
 
 struct RetrievalEval {
-	RetrievalEval() {};
-
-//	double avPrecAtN( vector<unsigned>& gold, vector<unsigned>& retrieved, unsigned n = 0 );
-//private:
-	double averagePrecision( unsigned num_rels, vector<unsigned>& retrieved  );
-	double ndcg( vector<unsigned>& retrieved, vector<unsigned>&gold );
-
+  RetrievalEval() {};
+  double ndcg( vector<unsigned>& retrieved, vector<unsigned>& gold );
+  double averagePrecision( unsigned num_rels, vector<unsigned>& retrieved );
 };
 
-//TODO
 struct Retrieval {
-	Retrieval( string scoring = "map",  unsigned heap_size = 10 );
- 	unsigned heap_size_;
-	string scoring_;
- 	void runRetrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results );
-	double evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result_list  );
-	private:
-		RetrievalEval eval_;
-//		void retrieval( set<WordID>& query, DocumentCollection& docs, MyHeap& results );
-//		double averagePrecision( vector<unsigned>& gold, vector<unsigned>& retrieved );
-//		double ndcg( vector<unsigned>& retrieved );
-		void getSortedRelevances( vector<unsigned>& gold, map<string, unsigned>& rels  );
+  Retrieval( string scoring = "map",  unsigned heap_size = 10 );
+   unsigned heap_size_;
+  string scoring_;
+   void runRetrieval( set<WordID>& query, DocumentCollection& docs, vector<string>& doc_sample, MyHeap& results );
+   void runRetrieval( set<WordID>& query, vector< Document*>& docs, MyHeap& results  );
+  double evaluateRetrieval( map<string, unsigned>& rels, MyHeap& result_list  );
+  private:
+    RetrievalEval eval_;
+    void getSortedRelevances( vector<unsigned>& gold, map<string, unsigned>& rels  );
 };
 
 #endif /* RETRIEVAL_H_ */

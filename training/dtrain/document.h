@@ -34,7 +34,7 @@ public:
   Document( const string& docid = "" );
   map<WordID, double> weighted_vector_;
   void generateBM25Vector( map<WordID, unsigned>& dftable, double avg_len, double num_docs );
-  double getScoreForQueryTerm( WordID );
+  double getScoreForQueryTerm ( WordID );
 private:
   double BM25( double tf, double df, double avg_len, double num_docs, double k = 1.2, double b = 0.75);
 
@@ -47,6 +47,8 @@ public:
   map<string,unsigned> relevant_docs_;
   map<unsigned, vector<WordID> > sentences_; // query word tokens
   set<WordID> terms_; // query word types
+//  vector< Document* > document_sample_; // all relevant and sample of 200 irrelevant docs for this query
+  vector< string > document_sample_;
   void setRelevantDocs( string& docid, unsigned relscore );
   void setTerms( unsigned sent_id, const vector<WordID>& text, const set<WordID>& sw, set<WordID>& q  );
   void setTerms();

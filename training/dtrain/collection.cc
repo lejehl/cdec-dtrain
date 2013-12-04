@@ -12,8 +12,7 @@ using namespace std;
 using namespace dtrain;
 
 
-Collection::Collection( const string& filename )//: collection_()
-{
+Collection::Collection( const string& filename ){
   infile_ = filename;
   num_docs_ = 0;
   cout << "Made new collection: " <<  "filename: " << infile_
@@ -21,14 +20,11 @@ Collection::Collection( const string& filename )//: collection_()
 }
 
 
-
-unsigned Collection::getNumDocs()
-{
+unsigned Collection::getNumDocs(){
   return num_docs_;
 }
 
-void Collection::splitOnTabs( string& in, vector<string>& parts )
-{
+void Collection::splitOnTabs( string& in, vector<string>& parts ) {
   stringstream instream(in);
   string column;
   while ( getline( instream, column, '\t' ) ){
@@ -36,42 +32,32 @@ void Collection::splitOnTabs( string& in, vector<string>& parts )
   }
 }
 
-void Collection::tokenize( string& text, vector<string>& text_tok )
-{
+void Collection::tokenize( string& text, vector<string>& text_tok ) {
   boost::split(text_tok, text, boost::is_any_of(" "));
 }
 
 
 DocumentCollection::DocumentCollection( string& filename )
-: Collection( filename ), collection_(), dftable_()
-{
+: Collection( filename ), collection_(), dftable_() {
   avg_len_ = 0.0;
-  //	cout << "filename " << infile_ << endl;
   // TODO: optimise for larger document collections
-  loadDocs();
-  cout << "Have " << num_docs_ << " documents." << endl;
 }
 
 
-void DocumentCollection::generateDfTable( )
-{
+void DocumentCollection::generateDfTable(){
   for (map<string,Document>::iterator iter2=collection_.begin(); iter2 != collection_.end(); ++iter2)
   {
     map<WordID,unsigned> tfVec = iter2->second.tf_vector_;
     for ( map<WordID,unsigned>::iterator tf_iter=tfVec.begin(); tf_iter != tfVec.end(); ++tf_iter)
-    {
       dftable_[tf_iter->first] += 1;
-    }
   }
-
 }
 
 /*
  * for each document-id, populate the document collection.
  * calculate the dftable, bm25 weights and average document length
  */
-void DocumentCollection::loadDocs(  )
-{
+void DocumentCollection::loadDocs() {
   cerr << " loading documents..." << endl;
   ReadFile input( infile_ );
   string in;
@@ -79,7 +65,6 @@ void DocumentCollection::loadDocs(  )
   // make sure num_docs_ is 0
   num_docs_ = 0;
   while (getline( *input, in)) {
-    //		cout << num_docs_+1 << " ";
     vector<string> parts;
     splitOnTabs( in, parts );
     string docid = parts[0];
@@ -96,11 +81,11 @@ void DocumentCollection::loadDocs(  )
     map<string, Document>::iterator Doc = collection_.find(docid);
     Doc->second.generateTfVector( word_id_vec );
 
-    // increase num_docs
     num_docs_ += 1;
   }
   cout << "\nhave " << num_docs_<< " documents." << endl;
 
+  // calculate average document length
   averageDocLength();
 
   // make dftable from tfvectors
@@ -115,42 +100,36 @@ void DocumentCollection::loadDocs(  )
     double n = getNumDocs();
     iter->second.generateBM25Vector( dftable_, a, n);
   }
-  //			cerr << " finished." << endl << "num docs: " << num_docs_ << endl
-  //			<< "avg len: " << avg_len_ << endl << "collection size: " << collection_.size() << endl;
-
-
 }
 
-void DocumentCollection::averageDocLength()
-{
+void DocumentCollection::averageDocLength() {
   double total = 0.0;
   for ( map<string,Document>::iterator iter=collection_.begin(); iter != collection_.end(); ++iter){
     double l = double(iter->second.doc_size_);
     total += l;
-    //		cout << "total" << total << endl;
   }
   avg_len_ = total /double( num_docs_ ) ;
 }
 
-double DocumentCollection::getAvgLen()
-{
+double DocumentCollection::getAvgLen() {
   return avg_len_;
 }
 
+Document* DocumentCollection::find( const string& docid ) {
+  return &collection_[docid];
+}
+
 QueryCollection::QueryCollection( string& filename, string& relevance_file, string& sw_file )
-: Collection( filename ), collection_(), sentence_qid_map_()
-{
+: Collection( filename ), collection_(), sentence_qid_map_() {
   relfile_ = relevance_file;
-  if ( sw_file != "" ) loadStopwords( sw_file ); // or do this in the general collection?
-  loadQueries();
+  if ( sw_file != "" ) loadStopwords( sw_file );
 }
 
 /*
  * for each query-id, load the relevance judgments and populate the sentence-qid-map.
  * Don't load the query text, since it needs to be translated first.
  */
-void QueryCollection::loadQueries()
-{
+void QueryCollection::loadQueries( DocumentCollection& d ) {
   cerr << " loading queries" << endl;
   cout << "qid\tnum_rels" << endl;
   ReadFile input( infile_ );
@@ -175,61 +154,47 @@ void QueryCollection::loadQueries()
     sentence_qid_map_[num_sentences] = qid;
     num_sentences += 1;
   }
-  //	cout << "Finished Loading!" << endl << "filename: " << infile_ << endl
-  //			 << endl << "num docs: " << num_docs_ << endl
-  //			<< "collection size: " << collection_.size() << endl;
 
-  // load relevances
+  // load relevance judgments
   prev_qid.clear();
   qid.clear();
   map<string, Query>::iterator Q;
   while(getline( *rels, rel_record )){
-    //		cout << " reading record \" " << rel_record << "\"" << endl;
     vector<string> rel_parts;
     splitOnTabs( rel_record, rel_parts );
-    qid = rel_parts[0];
-    string rel_doc = rel_parts[2];
+    qid = rel_parts[0]; // query id
+    string rel_doc = rel_parts[2]; // document id
     unsigned rel_score;
-    stringstream(rel_parts[3]) >> rel_score ;
+    stringstream(rel_parts[3]) >> rel_score ; // relevance score as unsigned
     if ( prev_qid !=  qid ){
-      //			if (! prev_qid.empty() )
-      //				Q->second.printRelDocs();
       Q = collection_.find(qid);
       prev_qid = qid;
-      //			cout << "  new qid: " << qid << endl;
     }
-    //		cout << " adding to relevances: <" <<  rel_doc << " , " << rel_score << " >" << endl;
-    Q->second.setRelevantDocs( rel_doc, rel_score );
+    if ( rel_score > 0 )
+      Q->second.setRelevantDocs( rel_doc, rel_score );
+    //    Q->second.document_sample_.push_back( d.find(rel_doc) ); // add document pointer to document sample;
+    Q->second.document_sample_.push_back( rel_doc );
   }
-  //	Q->second.printRelDocs();
 }
 
 void QueryCollection::loadStopwords( string& sw_file ){
   ReadFile sw( sw_file );
   string stopword;
   while(getline( *sw, stopword )) {
-    //    cerr << "sw: <" << stopword << ">";
     stopwords_.insert(TD::Convert(stopword));
   }
 }
 
 
-void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok )
-{
+void QueryCollection::setSentence( unsigned sentid, vector<WordID> & text_tok ) {
   string qid = sentence_qid_map_[ sentid ];
   Query * qPtr;
   qPtr = & collection_[qid];// TODO: is this a pointer to the query with ID qid?
   qPtr->setSentence( sentid, text_tok);
-
-
 }
 
 
-map<string, Query >::iterator QueryCollection::getQuery( unsigned sent_id )
-{
-  //	cout << "Finding query for sentence " << sent_id << endl;
+map<string, Query >::iterator QueryCollection::getQuery( unsigned sent_id ) {
   string qid = sentence_qid_map_.at( sent_id);
-  //	cout << "Found query ID: " << qid << endl;
   return collection_.find( qid );
-
 }

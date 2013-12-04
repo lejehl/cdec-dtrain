@@ -285,165 +285,43 @@ MapScorer::MapScorer( string& query_file, string& doc_file, string& relevance_fi
 {
   cout << "Created new MapScorer. " << endl
       << "scoring: " << scoring << " heap size: " << heap_size << endl;
-  iteration_ = 0;
-  isFirstEpoch_ = true;
-  heap_size_= heap_size;
-  batch_size_ = 0;
-
+  iteration_ = 0; // keep track of where we are in input
+  isFirstEpoch_ = true; // obsolete?
+  heap_size_= heap_size; // max num retrieved
+  batch_size_ = 0; // number of sentences per query
+  docs_.loadDocs();
+  queries_.loadQueries( docs_ );
 }
 
 /*
  * MapScorer
  *
- * uses Average Precision of a query containing the current translation
+ * uses retrieval score of a query containing the current translation
  * to optimise translations for retrieval
  */
 score_t MapScorer::Score( const vector<WordID>& hyp, const vector<WordID>& ref,
-    const unsigned rank, const unsigned /*src_len*/ )
-{
-//	if ( isFirstEpoch_ == true ) {
-//		if ( rank == 0 ) {
-//			queries_.setSentence( iteration_, hyp );
-//		}
-//		return 0.0;
-//	} else {
-  //	get query location
+    const unsigned rank, const unsigned /*src_len*/ ){
+  // generate query
   map<string, Query >::iterator qIter = queries_.getQuery( iteration_ );
   if ( rank == 0 ) {
-    if (iteration_ == 0 ){
-      cout << "\n\nNEW EPOCH:" << endl;
-    }
-  cout << "\n==============================="<< endl << "Sentence "<< iteration_ <<
+  cerr << "\n==============================="<< endl << "Sentence "<< iteration_ <<
       " qid: " << qIter->second.doc_id_ << endl;
   qIter->second.printRelDocs();
   }
-  // generate query
   qIter->second.clear();
   set<WordID> query;
   qIter->second.setTerms( batch_size_, hyp, queries_.stopwords_, query );
-  // initialise heap
-  MyHeap results( heap_size_ );
+
   // run retrieval
-//	retrieval( docs_, qIter->second.terms_, results );
-  retrieval_.runRetrieval( query, docs_, results );
+  MyHeap results( heap_size_ );
+  retrieval_.runRetrieval( query, docs_, qIter->second.document_sample_, results );
+//  retrieval_.runRetrieval( query, qIter->second.document_sample_, results );
+
+  // score
   double score = retrieval_.evaluateRetrieval( qIter->second.relevant_docs_ , results );
-//	Query& query = qIter->second;
-//	vector<unsigned> retrieved( heap_size_ );
-//	vector<unsigned> rels = query.getSortedRelevances();
-//	// print gold standard
-//	if ( rank == 0){
-//		cout << "gold standard:" << endl;
-//		for ( unsigned i=0; i<rels.size() ; i++ ){
-//			cout << rels.at( i ) << " ";
-//		}
-//	}
-//	cout << endl;
 
-  // get relevance levels for retrieved docs
-//	if ( rank == 0){
-//	cout << "k-best-results: " << endl;
-//	}
-//	for ( unsigned i =0; i < retrieved.size(); i++ ){
-//		try {
-//			string docid = results.heap_.at(i).first;
-//			if ( query.relevant_docs_.count(docid) == 1 ){
-//				retrieved.at(i) =  query.relevant_docs_[docid] ;
-//			}
-//		} catch ( const out_of_range& oor ) {
-//			cerr << "This shouldn't happen!" << endl;
-//		}
-//	}
-//	double score =  eval_.avPrecAtN( rels, retrieved, heap_size_  );
   return (score_t) score;
-//	}
 }
-
-//void MapScorer::retrieval( DocumentCollection& docs, set<WordID>& query, MyHeap& results )
-//{
-//
-//	// TODO: maybe collection should implement its own iterator?
-////	cerr << " running retrieval... " << endl;
-//	for ( map<string, Document>::iterator docIter = docs.collection_.begin();
-//			docIter != docs.collection_.end(); ++docIter ){
-//		double score = 0.0;
-//		// TODO: query should have a term iterator?
-//		for ( set<WordID>::iterator it = query.begin(); it != query.end(); ++it ){
-//			score += docIter->second.getScoreForQueryTerm( *it );
-//		}
-//		// add to heap if score is greate than 0
-//		if (score != 0.0){
-//		pair<string, double> p = make_pair( docIter->first, score );
-//		results.addPair( p );
-//
-//		}
-//
-//	}
-//}
-
-
-//score_t MapScorer::averagePrecision( MyHeap& results,
-//    		Query& query, const unsigned rank )
-//{
-//	// reverse results (heap is in ascending order for retrieval)
-//	results.reverseHeap();
-////	cout << "calculating average precision" << endl;
-//	score_t avPrec = 0.0;
-//
-//	vector<unsigned> gold( results.size_ );
-//	vector<unsigned> retrieved( results.size_ );
-//
-//	// create gold standard
-////	cout << "number of relevant docs: " << query.relevant_docs_.size() << endl;
-//	if ( rank == 0){
-//	cout << "gold standard:" << endl;
-//	}
-//	vector<unsigned> rels = query.getSortedRelevances();
-//	for ( unsigned i=0; i<gold.size() ; i++ ){
-//		try {
-//		gold.at( i ) =  rels.at(i) ;
-//		} catch ( const out_of_range& oor ) {
-////			cout << "caught an out of range exception: only have " << rels.size() << " relevant docs!" << endl;
-//		}
-//		if ( rank == 0){
-//		cout << gold.at( i ) << " ";
-//		}
-//	}
-//	cout << endl;
-//
-//	// create results
-//	if ( rank == 0){
-//	cout << "k-best-results: " << endl;
-//	}
-//	for ( unsigned i =0; i < results.heap_.size(); i++ ){
-//		string docid = results.heap_.at(i).first;
-//		if ( query.relevant_docs_.count(docid) == 1 ){
-//			retrieved.at(i) =  query.relevant_docs_[docid] ;
-//		}
-////
-//	}
-////	cout << endl;
-//
-//	unsigned counter = 0;
-//	double sum = 0.0;
-//
-//	// precision at i
-//	for ( unsigned i = 0; i < gold.size(); i++ ){
-//		if ( retrieved.at(i) >= gold.at(i) ){
-//			counter++;
-//			sum += (double) counter / (double)( i+1 );
-//		}
-//	}
-////	cout << "sum:	" << sum << endl;
-////	cout << "counter:	" << counter << endl;
-//
-//	// normalize by number of relevant docs
-//	avPrec = sum/query.relevant_docs_.size();
-//	cout << "\t" << avPrec;
-//
-//	return avPrec;
-//}
-
-
 
 } // namespace
 

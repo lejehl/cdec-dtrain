@@ -16,49 +16,53 @@ dtrain_init(int argc, char** argv, po::variables_map* cfg)
 {
   po::options_description ini("Configuration File Options");
   ini.add_options()
-                                                ("input",             po::value<string>()->default_value("-"),                                             "input file (src)")
-                                                ("refs,r",            po::value<string>(),                                                                       "references")
-                                                ("output",            po::value<string>()->default_value("-"),                          "output weights file, '-' for STDOUT")
-                                                ("input_weights",     po::value<string>(),                                "input weights file (e.g. from previous iteration)")
-                                                ("decoder_config",    po::value<string>(),                                                      "configuration file for cdec")
-                                                ("print_weights",     po::value<string>(),                                               "weights to print on each iteration")
-                                                ("stop_after",        po::value<unsigned>()->default_value(0),                                 "stop after X input sentences")
-                                                ("keep",              po::value<bool>()->zero_tokens(),                               "keep weights files for each iteration")
-                                                ("epochs",            po::value<unsigned>()->default_value(10),                               "# of iterations T (per shard)")
-                                                ("k",                 po::value<unsigned>()->default_value(100),                            "how many translations to sample")
-                                                ("sample_from",       po::value<string>()->default_value("kbest"),     "where to sample translations from: 'kbest', 'forest'")
-                                                ("filter",            po::value<string>()->default_value("uniq"),                          "filter kbest list: 'not', 'uniq'")
-                                                ("pair_sampling",     po::value<string>()->default_value("XYX"),                 "how to sample pairs: 'all', 'XYX' or 'PRO'")
-                                                ("hi_lo",             po::value<float>()->default_value(0.1),                   "hi and lo (X) for XYX (default 0.1), <= 0.5")
-                                                ("pair_threshold",    po::value<score_t>()->default_value(0.),                         "bleu [0,1] threshold to filter pairs")
-                                                ("N",                 po::value<unsigned>()->default_value(4),                                          "N for Ngrams (BLEU)")
-                                                ("scorer",            po::value<string>()->default_value("stupid_bleu"), "scoring: bleu, stupid_, smooth_, approx_, lc_, map")
-                                                ("learning_rate",     po::value<weight_t>()->default_value(1.0),                                              "learning rate")
-                                                ("gamma",             po::value<weight_t>()->default_value(0.),                            "gamma for SVM (0 for perceptron)")
-                                                ("select_weights",    po::value<string>()->default_value("last"),     "output best, last, avg weights ('VOID' to throw away)")
-                                                ("rescale",           po::value<bool>()->zero_tokens(),                              "rescale weight vector after each input")
-                                                ("l1_reg",            po::value<string>()->default_value("none"), "apply l1 regularization as in 'Tsuroka et al' (2010) UNTESTED")
-                                                ("l1_reg_strength",   po::value<weight_t>(),                                                     "l1 regularization strength")
-                                                ("fselect",           po::value<weight_t>()->default_value(-1), "select top x percent (or by threshold) of features after each epoch NOT IMPLEMENTED") // TODO
-                                                ("approx_bleu_d",     po::value<score_t>()->default_value(0.9),                                   "discount for approx. BLEU")
-                                                ("scale_bleu_diff",   po::value<bool>()->zero_tokens(),                      "learning rate <- bleu diff of a misranked pair")
-                                                ("loss_margin",       po::value<weight_t>()->default_value(0.),  "update if no error in pref pair but model scores this near")
-                                                ("max_pairs",         po::value<unsigned>()->default_value(std::numeric_limits<unsigned>::max()), "max. # of pairs per Sent.")
-                                                ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights")
-                                                // additional options for scoring with MAP
-                                                ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
-                                                ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
-                                                ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations")
-                                                ("sw_file",		      po::value<string>()->default_value(""),							  	"mapscoring: stopword file (optional)")
-                                                ("num_retrieved",	  po::value<unsigned>()->default_value(10),					  "mapscoring: number of retrieved documents")
-                                                ("num_threads",	  po::value<unsigned>()->default_value(4),					  "mapscoring: number of parallel threads")
-                                                ("query_trans",	  po::value<string>()->default_value(""),					  "mapscoring: supply initial query translations");
+                                                                            ("input",             po::value<string>()->default_value("-"),                                             "input file (src)")
+                                                                            ("refs,r",            po::value<string>(),                                                                       "references")
+                                                                            ("output",            po::value<string>()->default_value("-"),                          "output weights file, '-' for STDOUT")
+                                                                            ("input_weights",     po::value<string>(),                                "input weights file (e.g. from previous iteration)")
+                                                                            ("decoder_config",    po::value<string>(),                                                      "configuration file for cdec")
+                                                                            ("print_weights",     po::value<string>(),                                               "weights to print on each iteration")
+                                                                            ("stop_after",        po::value<unsigned>()->default_value(0),                                 "stop after X input sentences")
+                                                                            ("keep",              po::value<bool>()->zero_tokens(),                               "keep weights files for each iteration")
+                                                                            ("epochs",            po::value<unsigned>()->default_value(10),                               "# of iterations T (per shard)")
+                                                                            ("k",                 po::value<unsigned>()->default_value(100),                            "how many translations to sample")
+                                                                            ("sample_from",       po::value<string>()->default_value("kbest"),     "where to sample translations from: 'kbest', 'forest'")
+                                                                            ("filter",            po::value<string>()->default_value("uniq"),                          "filter kbest list: 'not', 'uniq'")
+                                                                            ("pair_sampling",     po::value<string>()->default_value("XYX"),                 "how to sample pairs: 'all', 'XYX' or 'PRO'")
+                                                                            ("hi_lo",             po::value<float>()->default_value(0.1),                   "hi and lo (X) for XYX (default 0.1), <= 0.5")
+                                                                            ("pair_threshold",    po::value<score_t>()->default_value(0.),                         "bleu [0,1] threshold to filter pairs")
+                                                                            ("N",                 po::value<unsigned>()->default_value(4),                                          "N for Ngrams (BLEU)")
+                                                                            ("scorer",            po::value<string>()->default_value("stupid_bleu"), "scoring: bleu, stupid_, smooth_, approx_, lc_, map")
+                                                                            ("learning_rate",     po::value<weight_t>()->default_value(1.0),                                              "learning rate")
+                                                                            ("gamma",             po::value<weight_t>()->default_value(0.),                            "gamma for SVM (0 for perceptron)")
+                                                                            ("select_weights",    po::value<string>()->default_value("last"),     "output best, last, avg weights ('VOID' to throw away)")
+                                                                            ("rescale",           po::value<bool>()->zero_tokens(),                              "rescale weight vector after each input")
+                                                                            ("l1_reg",            po::value<string>()->default_value("none"), "apply l1 regularization as in 'Tsuroka et al' (2010) UNTESTED")
+                                                                            ("l1_reg_strength",   po::value<weight_t>(),                                                     "l1 regularization strength")
+                                                                            ("fselect",           po::value<weight_t>()->default_value(-1), "select top x percent (or by threshold) of features after each epoch NOT IMPLEMENTED") // TODO
+                                                                            ("approx_bleu_d",     po::value<score_t>()->default_value(0.9),                                   "discount for approx. BLEU")
+                                                                            ("scale_bleu_diff",   po::value<bool>()->zero_tokens(),                      "learning rate <- bleu diff of a misranked pair")
+                                                                            ("loss_margin",       po::value<weight_t>()->default_value(0.),  "update if no error in pref pair but model scores this near")
+                                                                            ("max_pairs",         po::value<unsigned>()->default_value(std::numeric_limits<unsigned>::max()), "max. # of pairs per Sent.")
+                                                                            ("noup",              po::value<bool>()->zero_tokens(),                                               "do not update weights")
+                                                                            // additional options for scoring with MAP
+                                                                            ("query_file", 		  po::value<string>()->default_value(""),										"mapscoring: query file" )
+                                                                            ("doc_file",		  po::value<string>()->default_value(""),								"mapscoring: document collection")
+                                                                            ("rel_file",		  po::value<string>()->default_value(""),							  "mapscoring: relevance annotations")
+                                                                            ("sw_file",		      po::value<string>()->default_value(""),							  	"mapscoring: stopword file (optional)")
+                                                                            ("num_retrieved",	  po::value<unsigned>()->default_value(10),					  "mapscoring: number of retrieved documents")
+                                                                            ("num_threads",	  	  po::value<unsigned>()->default_value(4),					  "mapscoring: number of parallel threads")
+                                                                            ("query_trans",	  	  po::value<string>()->default_value(""),					  "mapscoring: supply initial query translations")
+                                                                            ("iters_per_epoch",	  po::value<unsigned>()->default_value(500),				   "CLIR-scoring: number of training iterations per epoch")
+                                                                            ("online_update",	  po::value<bool>()->default_value(false),				   "CLIR-scoring: update weights after every training instance (pair)?")
+                                                                            ("avg_perceptron",	  po::value<bool>()->default_value(false),				   "CLIR-scoring: use Collins-style averaged weights (Collins, EMNLP '02) - ONLY WORKS WITH ONLINE UPDATE!");
+
 
   po::options_description cl("Command Line Options");
   cl.add_options()
-                                                ("config,c",         po::value<string>(),              "dtrain config file")
-                                                ("quiet,q",          po::value<bool>()->zero_tokens(),           "be quiet")
-                                                ("verbose,v",        po::value<bool>()->zero_tokens(),         "be verbose");
+                                                                            ("config,c",         po::value<string>(),              "dtrain config file")
+                                                                            ("quiet,q",          po::value<bool>()->zero_tokens(),           "be quiet")
+                                                                            ("verbose,v",        po::value<bool>()->zero_tokens(),         "be verbose");
   cl.add(ini);
   po::store(parse_command_line(argc, argv, cl), *cfg);
   if (cfg->count("config")) {
@@ -164,6 +168,9 @@ main(int argc, char** argv)
   string stopwords =  cfg["sw_file"].as<string>();
   unsigned num_retr = cfg["num_retrieved"].as<unsigned>();
   unsigned threads = cfg["num_threads"].as<unsigned>();
+  unsigned num_iters = cfg["iters_per_epoch"].as<unsigned>();
+  bool online_update = cfg["online_update"].as<bool>();
+  bool avg_perceptron = cfg["avg_perceptron"].as<bool>();
   string init_trans_fn =  cfg["query_trans"].as<string>();
   ReadFile init_trans;
   if ( init_trans_fn != "" ) {
@@ -263,8 +270,6 @@ main(int argc, char** argv)
   ReadFile refs(refs_fn);
 
 
-
-
   unsigned in_sz = std::numeric_limits<unsigned>::max(); // input index, input size
   vector<pair<score_t, score_t> > all_scores;
   score_t max_score = 0.;
@@ -325,7 +330,6 @@ main(int argc, char** argv)
     }
     ostream& o = *qt.stream();
 
-
     while(getline(*input, in)){
       //		  if ( ii+1 % 5 == 0 ){
       if (init_trans_fn == "" ) {
@@ -344,7 +348,7 @@ main(int argc, char** argv)
         o << endl;
       } else {
         if (it == 0 )
-                cerr << "loading translations" << endl;
+          cerr << "loading translations" << endl;
         getline(*init_trans, trans );
         vector<string> tok;
         vector<WordID> ids;
@@ -362,13 +366,13 @@ main(int argc, char** argv)
     scorer->Reset();
     cerr << endl;
     cerr << "done" << endl;
-  }
+    delete v;
+  } // end first input loop
 
   //	if ("scorer_str" == "map" ) {
   SparseVector<weight_t> diff_vec; // initialize weight vector (for mini-batch update)
   unsigned batch_size = 0;
   vector< vector<WordID> > top_hyps;
-  //	}
   WriteFile lf("loss"); // works with '-'
   ostream& o = *lf.stream();
   o.precision(17);
@@ -376,21 +380,20 @@ main(int argc, char** argv)
   // begin outer loop
   for (unsigned t = 0; t < T; t++) // T epochs
   {
-
-    time_t start, end;
+    time_t start, end, start_opt, end_opt;
     time(&start);
     score_t score_sum = 0.;
     score_t model_sum(0);
+    int converged_after = num_iters; // for averaged perceptron
+    SparseVector<weight_t> sum_lambdas; // for averaged perceptron
     unsigned ii = 0, rank_errors = 0, margin_violations = 0, npairs = 0, f_count = 0, list_sz = 0;
     if (!quiet) cerr << "Iteration #" << t+1 << " of " << T << "." << endl;
-
     score_t loss = 0.;
     vector<pair<ScoredHyp,ScoredHyp> > batch_pairs;
 
     // begin inner loop
     while(true)
     {
-
       string in;
       bool next = false, stop = false; // next iteration or premature stop
       if ( (t == 0) && (scorer_str != "map") ) {
@@ -450,26 +453,16 @@ main(int argc, char** argv)
           boost::split(ref_tok, r_, boost::is_any_of(" "));
           register_and_convert(ref_tok, ref_ids);
           ref_ids_buf.push_back(ref_ids);
-          //      if ( scorer_str != "map" ){
-          //    	  cerr << "shouldn't happen with map" << endl;
-          //   src_str_buf.push_back(in);
-          //      }
         } else {
           ref_ids = ref_ids_buf[ii];
         }
-
-        //    cerr << "decode" << endl;
         observer->SetRef(ref_ids);
 
       }
       if ( (t == 0) && ( scorer_str != "map") ){
-        //      if ( t == 0 ){
-
-        //    	cerr << "shouldn't happen with map" << endl;
         cout << "decoding...\n";
         decoder.Decode(in, observer);
-      }
-      else {
+      } else {
         cout << "decoding...\n";
         decoder.Decode(src_str_buf[ii], observer);
       }
@@ -502,30 +495,24 @@ main(int argc, char** argv)
 
       // for MAP: increase iteration
       if (scorer_str == "map") {
-        if (t != 0 ) {
-          //          top_hyps.push_back((*samples)[0].w);
-          //          //    		scorer->updateSentences(top_hyps); // use Viterbi translation if t is 0
-          //        } else {
-          int max_pos;
-          score_t curr_max = 0;
+        int max_pos;
+        score_t curr_max = 0;
 
-          // find maximum scoring hypothesis
-          for ( int i =0; i < (*samples).size(); i++ ) {
-            if ( (*samples)[i].score > curr_max ) {
-              max_pos = i;
-              curr_max = (*samples)[i].score;
-            }
+        // find maximum scoring hypothesis
+        for ( int i =0; i < (*samples).size(); i++ ) {
+          if ( (*samples)[i].score > curr_max ) {
+            max_pos = i;
+            curr_max = (*samples)[i].score;
           }
-          cout << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
-          top_hyps.push_back( (*samples)[max_pos].w );
         }
+        cerr << "top1 hyp score: " << (*samples)[0].score << endl;
+        cerr << "maximum scoring hyp: " << max_pos << ", score: " << curr_max << endl;
+        top_hyps.push_back( (*samples)[max_pos].w );
         scorer->increaseIter( );
       }
 
 
       // weight updates
-      // if using MAP, don't do an update for first iteration
-      //      if (!noup && !( scorer_str == "map" && t == 0) ) {
       if (!noup  ) {
 
         // get pairs
@@ -538,6 +525,7 @@ main(int argc, char** argv)
         if (pair_sampling == "PRO")
           PROsampling(samples, pairs, pair_threshold, max_pairs);
         npairs += pairs.size();
+
         // add pairs to batch
         for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = pairs.begin();
             it != pairs.end(); it++) {
@@ -550,64 +538,70 @@ main(int argc, char** argv)
 
 
     // do update for all pairs
-    //    if (!noup && !( scorer_str == "map" && t == 0) ) {
     if (!noup  ) {
-
-      cout << "do update... \n";
+      time(&start_opt);
       cerr.precision(17);
       const unsigned s = batch_pairs.size();
+      cerr << "do " << num_iters << " optimization iterations over " << s << " pairs.\n";
       vector< SparseVector<weight_t> > grads_j;
       grads_j.resize(s);
       vector <score_t> loss_j;
       loss_j.resize(s);
-      vector<bool> re_j;
-      re_j.resize(s);
-
-
-      for (int i = 500; i> 0; i--) {
-
+      vector<bool> rc_j;
+      rc_j.resize(s);
+      for (int i = num_iters; i> 0; i--) {
         loss = 0.;
         loss_j.clear();
         grads_j.clear();
-        re_j.clear();
+        //        re_j.clear();
+        if (i%50 == 0 ) cerr << "." ;
 
         // BEGIN PARALLEL
         // parallelize gradient aggregation over all pairs
+        //# pragma omp parallel for
+        //        for (unsigned j = 0; j< s;  j++ ) {
+        unsigned j = 0;
+        unsigned num_constraints = 0;
+        unsigned num_rank_errs = 0;
+        for (vector< pair<ScoredHyp, ScoredHyp> >::iterator it=batch_pairs.begin(); it != batch_pairs.end(); ++it ) {
+            cerr << _p5 << _p << "WEIGHTS" << endl;
+            for (vector<string>::iterator it = print_weights.begin(); it != print_weights.end(); it++) {
+              cerr << setw(18) << *it << " = " << lambdas.get(FD::Convert(*it)) << endl;
+            }
+          if ( rc_j[j] == true ) {
+            if ( avg_perceptron ) {
+              sum_lambdas += lambdas;
+            }
+            continue; // if the pair is ranked correctly, don't reconsider it
+          }
 
-
-        //          for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = pairs.begin();
-        //                for (vector<pair<ScoredHyp,ScoredHyp> >::iterator it = batch_pairs.begin();
-        //                    it != batch_pairs.end(); it++) {
-
-
-
-
-
-# pragma omp parallel for
-        for (unsigned j = 0; j< s;  j++ ) {
-          //          vector< pair<ScoredHyp,ScoredHyp> >::iterator it = batch_pairs.begin() + j;
           bool rank_error;
-          score_t margin;
+          //          score_t margin;
+          score_t margin = std::numeric_limits<float>::max();
           //          if (faster_perceptron) { // we only have considering misranked pairs
           //            rank_error = true; // pair sampling already did this for us
           //            margin = std::numeric_limits<float>::max();
           //          } else {
           //            rank_error = it->first.model <= it->second.model;
-          cerr << "first.model: " << batch_pairs[j].first.model;
-             cerr << ", second.model: " << batch_pairs[j].second.model << endl;
 
-          if (i < 500 ) {
-              cerr << "Updating model scores" << endl;
-            batch_pairs[j].first.model = lambdas.dot( batch_pairs[j].first.f) ;
-            batch_pairs[j].second.model = lambdas.dot( batch_pairs[j].second.f) ;
-            //              it->first.model = lambdas.dot( it->first.f) ;
-            //              it->second.model = lambdas.dot( it->second.f) ;
+          // update model score
+          //          vector< pair<ScoredHyp, ScoredHyp> >::iterator it = batch_pairs.begin()+j;
+          if (i < num_iters ) {
+            it->first.model = it->first.f.dot(lambdas) ;
+            it->second.model = it->second.f.dot(lambdas);
+            //            batch_pairs[j].first.model = batch_pairs[j].first.f.dot(lambdas) ;
+            //            batch_pairs[j].second.model = batch_pairs[j].second.f.dot(lambdas);
           }
-                      cerr << "first.model: " << batch_pairs[j].first.model;
-                      cerr << ", second.model: " << batch_pairs[j].second.model << endl;
 
-          rank_error = batch_pairs[j].first.model <= batch_pairs[j].second.model;
-          margin = fabs((batch_pairs[j].first.model) - (batch_pairs[j].second.model));
+
+          rank_error = it->first.model <= it->second.model;
+          if ( ! rank_error ) {
+            margin = fabs((it->first.model) - (it->second.model));
+          } else {
+            num_rank_errs++;
+          }
+          //          cerr << "first model: "<< it->first.model << " | second model" << it->second.model << " | rank err? "<< rank_error << endl;
+
 
           //            rank_error = it->first.model <= it->second.model;
           //            margin = fabs((it->first.model) - (it->second.model));
@@ -616,131 +610,113 @@ main(int argc, char** argv)
           //          }
           //          if (rank_error) rank_errors++;
           //          if (scale_bleu_diff) eta = it->first.score - it->second.score;
-          // update if margin < loss_margin
-          if (rank_error || margin < loss_margin) {
-            //#pragma omp critical(update_loss)
-            //            loss += loss_margin - ( batch_pairs[j].first.model - batch_pairs[j].second.model);
-            loss_j[j] = loss_margin - ( batch_pairs[j].first.model - batch_pairs[j].second.model);
-            //            loss += loss_margin - ( it->first.model - it->second.model);
-            //            cerr << "i=" << i << ", loss: " << loss << endl;
 
-            //            if ( scorer_str != "map" ) {
-            //              diff_vec.clear();
+          // calculate gradient if margin < loss_margin
+          if (rank_error || margin < loss_margin) {
+
+            //            loss += loss_margin - ( batch_pairs[j].first.model - batch_pairs[j].second.model);
+            //            loss_j[j] = loss_margin - ( it->first.model - it->second.model);
+            loss += loss_margin - ( it->first.model - it->second.model);
+
             //              //        		SparseVector<weight_t> diff_vec = it->first.f - it->second.f; // calculate difference between feature vectors (gradient)
-            //              diff_vec = it->first.f - it->second.f;
-            //              lambdas.plus_eq_v_times_s(diff_vec, eta);  // add learning rate * gradient, update after every pair
-            //        	    cout << "weights after update: " << endl;
-            //        	    for (int i =0; i<lambdas.size(); i++){
-            //        	    	cout << lambdas[i] << " ";
-            //        	    }
-            //        	    cout << endl;
-            //            }
-            //
-            //            else {
-            //#pragma omp critical(update_diff_vec)
-            //            {
-//                          diff_vec += batch_pairs[j].first.f - batch_pairs[j].second.f;
-            grads_j[j] = batch_pairs[j].first.f - batch_pairs[j].second.f;
-            re_j[j] = true;
-            //            }
-            //            }
-            //              batch_size++; // add 1 for each "constraint"
-          } else {
-            re_j[j] = false;
-          }
+            if ( online_update ) {
+              diff_vec = it->first.f - it->second.f;
+              lambdas.plus_eq_v_times_s(diff_vec, eta);  // add learning rate * gradient, update after every pair
+            } else {
+              //            }
+
+              //            grads_j[j] = it->first.f - it->second.f;
+              diff_vec += it->first.f - it->second.f;
+            }
+            num_constraints++;
+
+            rc_j[j] = false;
+          } else { rc_j[j] = true; }
+
+          if (avg_perceptron)
+            sum_lambdas += lambdas;
+          //          }
+
           //            if (gamma)
           //              lambdas.plus_eq_v_times_s(lambdas, -2*gamma*eta*(1./npairs));
+          j++;
+
+        }// END PARALLEL
+
+
+        // calculate batch gradient and batch loss
+        //        unsigned num_constraints = 0;
+        //        if (scorer_str == "map"  ) {
+        //          for (unsigned i =0; i< s; i++) {
+        //            if (re_j[i] == true ) {
+        //              num_constraints ++;
+        //              loss += loss_j[i];
+        //              diff_vec += grads_j[i];
+        //            }
+        //          }
+        if (! online_update ) {
+          lambdas.plus_eq_v_times_s(diff_vec, (1/(double) num_constraints) * eta);
         }
-
-        // END PARALLEL
-
-        // minibatch update: only update if we are at the end of a query
-        //        if (scorer_str == "map" && scorer->end_of_batch && batch_size > 0 ) {
-        // update after every sentence
-        cerr << "end of update iteration. Total loss: " << loss << endl;
-        if (scorer_str == "map"  ) {
-          for (unsigned i =0; i< s; i++) {
-            loss += loss_j[i];
-            if (re_j[i] == true )
-            diff_vec += grads_j[i];
-          }
-
-
-          //            if (scorer_str == "map" && t>0 && ii==in_sz && batch_size > 0 ) {
-          cerr << "updating weights\n";
-          // pass weights to decoder
-          //            lambdas.init_vector(&dense_weights);
-
-          //          lambdas.plus_eq_v_times_s(diff_vec, ( 1/(double) batch_size) * eta); // add learning rate * averaged gradient
-          lambdas.plus_eq_v_times_s(diff_vec, eta);
-          for (vector<string>::iterator it = print_weights.begin(); it != print_weights.end(); it++) {
-            cerr << setw(18) << *it << " = " << lambdas.get(FD::Convert(*it)) << ", ";
-          }
-          cerr << endl;
-          //          cout << "C=" << batch_size << endl; // TODO: check if batch_size is 0!
-          diff_vec.clear();
-          //          batch_size = 0;
-          // update scored hyps and sort
-          //          score_t top_model = -std::numeric_limits<double>::infinity();
-          //          score_t top_ndcg = 0.;
-          //          for ( int i =0; i < (*samples).size(); i++ ) {
-          //            (*samples)[i].model = lambdas.dot( (*samples)[i].f );
-          //            if ( (*samples)[i].model > top_model) {
-          //              top_model = (*samples)[i].model;
-          //              top_ndcg = (*samples)[i].score;
-          //
-          //            }
-          //          }
-          //          cerr << "Top1 model score: " << top_model << ", Top 1 ndcg: " << top_ndcg << endl;
-          //        }
-          cerr << "loss: " << loss << endl;
-          o << loss << endl;
+        diff_vec.clear();
+        // stop if there are no ranking errors or margin violations
+        if (num_rank_errs== 0 and num_constraints == 0 ) {
+          converged_after = num_iters-i+1;
+          break;
         }
+        o << loss << endl;
+        cerr << "num_constraints: " << num_constraints << ", num_rank_errs: " << num_rank_errs << endl;
+      }
+      cerr << "converged after " << converged_after << " iterations\n";
 
 
-        // l1 regularization
-        // please note that this penalizes _all_ weights
-        // (contrary to only the ones changed by the last update)
-        // after a _sentence_ (not after each example/pair)
-        if (l1naive) {
-          FastSparseVector<weight_t>::iterator it = lambdas.begin();
-          for (; it != lambdas.end(); ++it) {
-            it->second -= sign(it->second) * l1_reg;
-          }
-        } else if (l1clip) {
-          FastSparseVector<weight_t>::iterator it = lambdas.begin();
-          for (; it != lambdas.end(); ++it) {
-            if (it->second != 0) {
-              weight_t v = it->second;
-              if (v > 0) {
-                it->second = max(0., v - l1_reg);
-              } else {
-                it->second = min(0., v + l1_reg);
-              }
+      // l1 regularization
+      // please note that this penalizes _all_ weights
+      // (contrary to only the ones changed by the last update)
+      // after a _sentence_ (not after each example/pair)
+      if (l1naive) {
+        FastSparseVector<weight_t>::iterator it = lambdas.begin();
+        for (; it != lambdas.end(); ++it) {
+          it->second -= sign(it->second) * l1_reg;
+        }
+      } else if (l1clip) {
+        FastSparseVector<weight_t>::iterator it = lambdas.begin();
+        for (; it != lambdas.end(); ++it) {
+          if (it->second != 0) {
+            weight_t v = it->second;
+            if (v > 0) {
+              it->second = max(0., v - l1_reg);
+            } else {
+              it->second = min(0., v + l1_reg);
             }
           }
-        } else if (l1cumul) {
-          weight_t acc_penalty = (ii+1) * l1_reg; // ii is the index of the current input
-          FastSparseVector<weight_t>::iterator it = lambdas.begin();
-          for (; it != lambdas.end(); ++it) {
-            if (it->second != 0) {
-              weight_t v = it->second;
-              weight_t penalized = 0.;
-              if (v > 0) {
-                penalized = max(0., v-(acc_penalty + cumulative_penalties.get(it->first)));
-              } else {
-                penalized = min(0., v+(acc_penalty - cumulative_penalties.get(it->first)));
-              }
-              it->second = penalized;
-              cumulative_penalties.set_value(it->first, cumulative_penalties.get(it->first)+penalized);
+        }
+      } else if (l1cumul) {
+        weight_t acc_penalty = (ii+1) * l1_reg; // ii is the index of the current input
+        FastSparseVector<weight_t>::iterator it = lambdas.begin();
+        for (; it != lambdas.end(); ++it) {
+          if (it->second != 0) {
+            weight_t v = it->second;
+            weight_t penalized = 0.;
+            if (v > 0) {
+              penalized = max(0., v-(acc_penalty + cumulative_penalties.get(it->first)));
+            } else {
+              penalized = min(0., v+(acc_penalty - cumulative_penalties.get(it->first)));
             }
+            it->second = penalized;
+            cumulative_penalties.set_value(it->first, cumulative_penalties.get(it->first)+penalized);
           }
         }
       }
 
+      time(&end_opt);
+      float opt_time = difftime(end_opt, start_opt);
+      cerr << "This took " << opt_time << " seconds" << endl;
+      cerr << endl;
+
     } else {
       cout << "no update.\n";
     }
+
 
     if (scorer_str == "map" && top_hyps.size() != 0 && scorer->end_of_batch ) {
       scorer->updateSentences( top_hyps );
@@ -749,19 +725,23 @@ main(int argc, char** argv)
 
     if (rescale) lambdas /= lambdas.l2norm();
 
-
-
     //      ++ii;
     //
     //    } // input loop
 
-    if (average) w_average += lambdas;
-
+    if (average)  {
+      if ( avg_perceptron ) {
+//        w_average.plus_eq_v_times_s(sum_lambdas, 1.0/( converged_after*batch_pairs.size())  );
+        lambdas = sum_lambdas * ( 1.0/( converged_after*batch_pairs.size()) ); // use averaged weights for next epoch
+        cerr << "Calculating average: sum_lambdas * 1.0/" << converged_after << " * " << batch_pairs.size() << endl;
+      } else {
+      w_average += lambdas;
+      }
+    }
     if (scorer_str == "approx_bleu" || scorer_str == "lc_bleu" || scorer_str == "map") scorer->Reset();
 
     if (t == 0) {
       in_sz = ii; // remember size of input (# lines)
-
     }
 
     // print some stats
@@ -831,7 +811,8 @@ main(int argc, char** argv)
       Weights::WriteToFile(w_fn, dense_weights, true);
     }
 
-
+    // eta for next iteration: use decreasing learning rate
+    //    eta /= 2;
   } // outer loop
 
   if (average) w_average /= (weight_t)T;

@@ -20,7 +20,7 @@
 
 using namespace std;
 
-struct Collection
+class Collection
 {
 public:
   Collection( const string& filename );
@@ -33,20 +33,21 @@ public:
 //	void printVector( vector<string> & );
 };
 
-struct DocumentCollection : public Collection
+class DocumentCollection : public Collection
 {
 public:
   DocumentCollection( string& filename );
-  map<string, Document > collection_;
+  map<string, Document> collection_;
   map<WordID, unsigned> dftable_;
   double avg_len_;
   void loadDocs( );
   void generateDfTable(  );
   void averageDocLength();
+  Document* find(  const string& docid );
   double getAvgLen();
 };
 
-struct QueryCollection : public Collection
+class QueryCollection : public Collection
 {
 
 public:
@@ -56,7 +57,7 @@ public:
   string relfile_;
   set<WordID> stopwords_;
 
-  void loadQueries( );
+  void loadQueries( DocumentCollection& );
   void loadStopwords( string& );
 //	void printQueryCollection();
   void setSentence( unsigned, vector<WordID> & );
