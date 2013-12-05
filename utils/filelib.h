@@ -75,6 +75,10 @@ class ReadFile : public BaseFile<std::istream> {
       }
     }
   }
+  void ReadAll(std::string& s) {
+    getline(*stream(), s, (char) EOF);
+    if (s.size() > 0) s.resize(s.size()-1);
+  }
 
 };
 
